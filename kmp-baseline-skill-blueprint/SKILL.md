@@ -174,6 +174,16 @@ Follow the step-by-step guidance, conventions, and patterns below when extending
     *   **Rule**: Ensure file extensions match the actual file content (e.g., do not name a JPEG file `.png`). This can cause runtime decoding errors.
 
 ### Gradle & Build Logic
+#### Handling Code Modifications & Errors (CRITICAL AI INSTRUCTION)
+*   **Rule**: **NEVER** run a Gradle build or test task (`gradle_build`, `./gradlew`) if your previous file modification tools (`write_file`, `replace_file_content`, etc.) returned "new issues" or "unresolved references" in their response.
+*   **Reason**: Gradle builds take a long time and will inevitably fail if the code is already structurally broken. You are wasting time and tokens.
+*   **Action**: If you see "new issues" after editing a file, STOP. Analyze the errors. Ensure you have the correct imports, that dependencies are declared in `build.gradle.kts`, and that you have performed a `gradle_sync` if you recently added new dependencies. Fix the code *before* attempting to build.
+
+#### Handling Code Modifications & Errors (CRITICAL AI INSTRUCTION)
+*   **Rule**: **NEVER** run a Gradle build or test task (`gradle_build`, `./gradlew`) if your previous file modification tools (`write_file`, `replace_file_content`, etc.) returned "new issues" or "unresolved references" in their response.
+*   **Reason**: Gradle builds take a long time and will inevitably fail if the code is already structurally broken. You are wasting time and tokens.
+*   **Action**: If you see "new issues" after editing a file, STOP. Analyze the errors. Ensure you have the correct imports, that dependencies are declared in `build.gradle.kts`, and that you have performed a `gradle_sync` if you recently added new dependencies. Fix the code *before* attempting to build.
+
 #### Running Gradle Tasks (CRITICAL AI INSTRUCTION)
 *   **Rule**: **NEVER** use the raw shell command `run_shell_command("./gradlew ...")` to execute Gradle builds, tests, or syncs unless strictly necessary for a very specific low-level reason. It often hangs, loses buffer output, and causes daemon lockups. 
 *   **Solution**: **ALWAYS** use the dedicated IDE `gradle_build` tool (e.g. `gradle_build(commandLine = "assembleDebug")`) or `gradle_sync` tool. This integrates directly with the IDE's build system and provides clean, structured output and error reporting.

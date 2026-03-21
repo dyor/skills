@@ -25,20 +25,21 @@ Core Architecture: Kotlin Multiplatform (Android, iOS), Jetpack Compose / Compos
 Goal: Initialize the stack and establish core dependencies.
 
 ### Step 1: Project Setup
-- [ ] **Agent Action**: Update `CALCULATOR.md` by executing `.skills/project-calculator/SKILL.md` before starting to track baseline progress.
+- [ ] **Agent Action**: Update `project-calculator` by executing `.skills/project-calculator/SKILL.md` before starting to track baseline progress.
 - [x] **User Action**: Change the Android Studio project view from "Android View" to "Project View" using the dropdown in the top-left of the Project tool window. This is required to see all KMP directories like `shared` and `iosApp`.
 - [x] **User Action**: Run `git init`.
 - [x] **Agent Action**: Purge extraneous targets. Remove `desktopApp`, `jvm`, `webApp`, `js`, and `wasmJs` references from `settings.gradle.kts` and the `kotlin { }` block in `shared/build.gradle.kts`. Delete their respective directories (`desktopApp/`, `webApp/`, `shared/src/jsMain/`, etc.). Clean up extraneous run configurations from `.idea/workspace.xml` and `.idea/runConfigurations/`. This project ONLY targets Android and iOS.
 - [x] **User Action**: Open `iosApp/iosApp.xcodeproj` in Xcode. Navigate to the `iosApp` target -> 'Signing & Capabilities' tab and configure the development 'Team'. This prevents obscure iOS compiler linkage errors later.
 - [x] **Validation**: Ensure project builds and runs on Android and iOS then run `git add . && git commit -m "Extraneous targets removed and iOS signing configured"`.
 - [x] **Agent Action**: Configure `build.gradle.kts` with required dependencies (Room, Ktor, Koin, Coil, Compose Navigation 3, Calf permissions). Only do this AFTER targets have been purged.
+    *   **Note**: For detailed guidance on correct Gradle dependency management and KSP configuration for Kotlin Multiplatform projects, including Room, refer to the "Gradle Dependency Management & KSP Configuration (CRITICAL & CORRECTED)" section in the `kmp-baseline-skill-blueprint/SKILL.md`.
     *   **Note**: If facing `Unresolved reference 'androidx.savedstate:savedstate-compose-serialization'` during dependency resolution, ensure this dependency is *removed* from `libs.versions.toml` and `build.gradle.kts`. Navigation 3 in KMP handles `NavKey` serialization via `SavedStateConfiguration` and `kotlinx.serialization.modules` directly, as documented in `.skills/project-skill/SKILL.md`.
 - [x] **Validation**: Ensure project builds and runs on Android and iOS then run `git add . && git commit -m "Phase 1 started"`.
 - [x] **User Action**: Add `film_noir.png` to codebase at `shared/src/commonMain/composeResources/drawable/film_noir.png`.
 - [x] **Agent Action**: Set `film_noir.png` as background image in `App.kt` immediately to verify resource loading.
 - [x] **Agent Action**: Adjust application style and theme based on `film_noir.png` aesthetic. Ensure text legibility on dark backgrounds by explicitly setting `contentColor = MaterialTheme.colorScheme.onSurface` on Cards and other containers.
 - [x] **Validation**: Validate that the app builds and runs with the background image then run `git add . && git commit -m "Phase 1 complete"`.
-- [ ] **Agent Action**: Update `CALCULATOR.md` by executing `.skills/project-calculator/SKILL.md` to reflect Phase 1 completion.
+- [x] **Agent Action**: Update `project-calculator` by executing `.skills/project-calculator/SKILL.md` to reflect Phase 1 completion.
 
 ## Phase 2: Core Features & Logic
 Goal: Implement the primary business logic, integrations (e.g., AI interop), and local database.
@@ -53,7 +54,7 @@ Goal: Implement the primary business logic, integrations (e.g., AI interop), and
 - [x] **Agent Action**: Implement Compose Navigation 3 with 6 navigation nodes: Home, Writers Room, Recording Studio, Editing Studio, Publishing Studio, and Archives.
 - [x] **Agent Action**: Create core UI screens and ViewModels for each of these screens. Start by just having 5 buttons on the Home screen (one for each of the other pages) and then a Home button on the other screens. 
 - [x] **Validation**: Manual testing of UI states.
-- [x] **Agent Action**: Update `progress-calculator` by executing the `.skills/project-calculator/SKILL.md` to reflect Phase 2 completion.
+- [x] **Agent Action**: Update `project-calculator` by executing the `.skills/project-calculator/SKILL.md` to reflect Phase 2 completion.
 
 ## Phase 3: Hardware / Native Integrations (Production)
 Goal: Implement device-specific features (Camera, Audio, Location, etc.).
@@ -82,7 +83,7 @@ Goal: Implement device-specific features (Camera, Audio, Location, etc.).
 ### Step 2.2: YouTube Integration
 - [ ] **Agent Action**: Provide an option to publish the video on YouTube shorts. It is ok to use simple shortcuts - like saving this video to the native Photo app and opening YouTube (where the user can upload the video from their native Photo app). 
 - [ ] **Validation**: Ensure that the described functionality works on Android and iOS and `git commit -m "Phase 3: Publishing Studio complete"`
-- [ ] **Agent Action**: Update `CALCULATOR.md` by executing `.skills/project-calculator/SKILL.md` to reflect Phase 3 completion.
+- [ ] **Agent Action**: Update `project-calculator` by executing `.skills/project-calculator/SKILL.md` to reflect Phase 3 completion.
 
 ## Phase 4: The Final Cut (Cleanup & Optimization)
 Goal: Polish, optimize, and prepare for production.
@@ -92,7 +93,7 @@ Goal: Polish, optimize, and prepare for production.
 - [ ] **Agent Action**: Remove or minimize debug logging.
 - [ ] **User Action**: Full regression test of the application.
 - [ ] **Validation**: `git add . && git commit -m "Phase 4: Final Cut"`
-- [ ] **Agent Action**: Update `CALCULATOR.md` by executing `.skills/project-calculator/SKILL.md` to reflect 100% completion.
+- [ ] **Agent Action**: Update `project-calculator` by executing `.skills/project-calculator/SKILL.md` to reflect 100% completion.
 
 ## Phase 5: Factory-Specific Polish
 Goal: Refine the user experience with precise video editing, dynamic durations, and finalized branding.

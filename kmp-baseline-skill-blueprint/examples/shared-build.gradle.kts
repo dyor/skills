@@ -1,13 +1,4 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import java.util.Properties
-
-val localProperties = Properties()
-val localPropertiesFile = rootProject.file("local.properties")
-if (localPropertiesFile.exists()) {
-    localProperties.load(localPropertiesFile.inputStream())
-}
-val geminiApiKey = localProperties.getProperty("GEMINI_API_KEY") ?: ""
-
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -15,9 +6,7 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.ksp)
-    alias(libs.plugins.room)
-    alias(libs.plugins.kotlinSerialization)
-    alias(libs.plugins.buildConfig)
+    alias(libs.plugins.kotlinx.serialization)
 }
 
 kotlin {
@@ -30,24 +19,38 @@ kotlin {
             isStatic = true
         }
     }
-    
+
     androidLibrary {
        namespace = "org.example.project.shared"
        compileSdk = libs.versions.android.compileSdk.get().toInt()
        minSdk = libs.versions.android.minSdk.get().toInt()
-    
+
        compilerOptions {
            jvmTarget = JvmTarget.JVM_11
        }
        androidResources {
            enable = true
        }
+       withHostTest {
+           isIncludeAndroidResources = true
+       }
     }
-    
+
+    targets.withType<org.jetbrains.kotlin.gradle.plugin.KotlinTarget> {
+        if (targetName == "android") {
+            ksp.arg("room.schemaLocation", "$projectDir/src/commonMain/room/schemas")
+        } else if (targetName.startsWith("ios")) {
+            ksp.arg("room.schemaLocation", "$projectDir/src/commonMain/room/schemas")
+        }
+    }
+
     sourceSets {
         androidMain.dependencies {
             implementation(libs.compose.uiToolingPreview)
+            implementation(libs.room.ktx)
             implementation(libs.ktor.client.okhttp)
+            implementation(libs.koin.android)
+            implementation(libs.coil.network.ktor)
             implementation(libs.androidx.camera.core)
             implementation(libs.androidx.camera.camera2)
             implementation(libs.androidx.camera.lifecycle)
@@ -74,9 +77,7 @@ kotlin {
             // Navigation
             implementation(libs.navigation3.ui)
             implementation(libs.lifecycle.viewmodel.navigation3)
-            implementation(libs.navigation3.runtime)
-
-        
+            
             // Ktor
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.content.negotiation)
@@ -92,36 +93,21 @@ kotlin {
             
             // Calf Permissions
             implementation(libs.calf.permissions)
-            
-            // Coroutines
-            implementation(libs.kotlinx.coroutines.core)
-            
-            // Datetime
             implementation(libs.kotlinx.datetime)
             implementation(libs.kotlinx.serialization.json)
-            
-            // CameraK
-            implementation(libs.camerak)
-            implementation(libs.camerak.video)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
             implementation(libs.kotlinx.coroutines.test)
         }
+        val androidHostTest by getting {
+            dependencies {
+                implementation(libs.androidx.test.core)
+                implementation(libs.androidx.test.runner)
+                implementation(libs.androidx.testExt.junit)
+            }
+        }
     }
-}
-
-ksp {
-
-}
-
-room {
-    schemaDirectory("src/commonMain/room/schemas")
-}
-
-buildConfig {
-    buildConfigField("String", "GEMINI_API_KEY", "\"${geminiApiKey}\"")
-    packageName("org.example.project.shared")
 }
 
 dependencies {
