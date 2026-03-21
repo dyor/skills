@@ -17,7 +17,7 @@ description: Blueprint for estimating and reporting how much of the project desc
 # Skill: KMP Project Progress Calculator
 
 ## Description
-This document provides predefined instructions for an AI assistant to estimate and report how much of the project described in the `.agents/skills/project-guide/SKILL.md` file has been completed. 
+This document provides predefined instructions for an AI assistant to estimate and report how much of the project described in the `.skills/project-guide/SKILL.md` file has been completed. 
 
 ## Trigger / Usage
 To use this skill in any project, ensure this file is in the blueprint skills directory and prompt the AI to calculate the project progress in accordance with it.
@@ -29,7 +29,7 @@ To use this skill in any project, ensure this file is in the blueprint skills di
 When the trigger prompt is received, please perform the following steps:
 
 ### 1. Parse the `project-guide` File
-Locate the `.agents/skills/project-guide/SKILL.md` file. Read its contents to understand the project phases, steps, and associated tasks.
+Locate the `.skills/project-guide/SKILL.md` file. Read its contents to understand the project phases, steps, and associated tasks.
 
 ### 2. Calculate Task Metrics
 Scan through all the actionable checkboxes (e.g. `- [ ]` for incomplete, `- [x]` or `- [X]` for complete) within the `project-guide` document.
@@ -40,7 +40,7 @@ Categorize the tasks by Phase and calculate:
 *   *Action Breakdown*: Count how many pending tasks are assigned to `**User Action**`, `**Agent Action**`, and `**Validation**`.
 
 ### 3. Generate `project-calculator`
-Create or update `.agents/skills/project-calculator/SKILL.md` with a comprehensive progress report. Populate it with the standard YAML frontmatter and the following structure:
+Create or update `.skills/project-calculator/SKILL.md` with a comprehensive progress report. Populate it with the standard YAML frontmatter and the following structure:
 
 *   **Methodology:** A brief explanation that progress is calculated based on the completion of actionable tasks (`- [x]` vs `- [ ]`) outlined in the `project-guide` phases.
 *   **Phase Breakdown:** A markdown table detailing the progress of each phase. The table must have the following columns:
@@ -74,7 +74,7 @@ description: Tracks and calculates the overall completion percentage of the proj
 # Project Progress Calculation
 
 ## Methodology
-Progress is calculated by evaluating the completed (`- [x]`) versus pending (`- [ ]`) tasks defined across all phases in the `.agents/skills/project-guide/SKILL.md` file.
+Progress is calculated by evaluating the completed (`- [x]`) versus pending (`- [ ]`) tasks defined across all phases in the `.skills/project-guide/SKILL.md` file.
 
 ## Phase Breakdown
 

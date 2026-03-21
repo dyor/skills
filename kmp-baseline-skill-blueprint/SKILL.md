@@ -186,7 +186,7 @@ Follow the step-by-step guidance, conventions, and patterns below when extending
 
 #### Avoid Version Roulette (CRITICAL AI INSTRUCTION)
 *   **Rule**: Before randomly changing version numbers or regressing to previous library versions, **ALWAYS** follow these steps:
-    1.  **Check Existing Documentation**: Consult `SKILLS/SKILL_SKILL.md` and `AGENTS.md` for any forbidden or recommended versions.
+    1.  **Check Existing Documentation**: Consult `.skills/project-skill/SKILL.md` and `AGENTS.md` for any forbidden or recommended versions.
     2.  **Web Search & Official Docs**: Use `web_search` and `search_android_docs` to find official migration guides, known issues, or compatibility tables for the library in question.
     3.  **Prioritize Code Updates**: The error is most likely due to API changes in a newer library version. Focus on updating your code to match the new version's API, rather than downgrading the library.
     4.  **Diagnose Transitive Conflicts**: Use Gradle's `dependencyInsight` command to identify potential transitive dependency mismatches. For example, to diagnose Ktor issues for the iOS ARM64 compilation classpath:
