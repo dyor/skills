@@ -6,7 +6,8 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.ksp)
-    alias(libs.plugins.kotlinx.serialization)
+    alias(libs.plugins.serialization)
+    alias(libs.plugins.room)
 }
 
 kotlin {
@@ -108,6 +109,12 @@ kotlin {
             }
         }
     }
+}
+
+}
+
+room {
+    schemaDirectory("$projectDir/src/commonMain/room/schemas")
 }
 
 dependencies {

@@ -225,9 +225,32 @@ Follow the step-by-step guidance, conventions, and patterns below when extending
 *   **Version Catalog**: Update `gradle/libs.versions.toml` frequently but verify compatibility between Kotlin, Compose Multiplatform, and AndroidX libraries. Use `./gradlew :shared:assemble` to quickly check dependency resolution.
 
 #### Room KMP Database Initialization (CRITICAL & CORRECTED)
-*   **Problem**: Encountering `kotlin.IllegalStateException: Room cannot verify the data integrity. Looks like you've changed schema but forgot to update the version number.` or `Cannot create a RoomDatabase without providing a SQLiteDriver via setDriver()` on iOS.
+*   **Problem**: Encountering `kotlin.IllegalStateException: Room cannot verify the data integrity. Looks like you've changed schema but forgot to update the version number.` or `Cannot create a RoomDatabase without providing a SQLiteDriver via setDriver()` on iOS, or "No matching Room schema directory for the KSP target 'iosSimulatorArm64'".
 *   **Solution**: For Room 2.7.0+ in KMP, you must rely on KSP to generate the constructor for non-Android platforms, but you configure the driver via standard factory functions. For *simple, additive* schema changes (like adding new columns with default values), `AutoMigration` is the preferred and simplest approach. For more complex migrations (e.g., column renames, type changes), manual `Migration` classes might still be necessary.
     *   **Rule**: When making any schema changes (adding/removing entities, fields, or changing types), you MUST increment the `version` number in the `@Database` annotation.
+    *   **Gradle Configuration (CRITICAL for KSP & Schema Location)**:
+        1.  **Remove `ksp.arg("room.schemaLocation", ...)` from `targets.withType<KotlinTarget>` blocks.** This configuration is problematic for iOS targets and should be handled by the top-level `room { ... }` block.
+        2.  **Add the `room { schemaDirectory(...) }` block** directly at the top level of your `shared/build.gradle.kts` file. This is the correct way to specify the schema location for all KSP targets.
+            ```kotlin
+            // shared/build.gradle.kts
+            // ... (plugins and kotlin blocks) ...
+
+            room {
+                schemaDirectory("$projectDir/schemas") // Defines where schema files are stored
+            }
+
+            // ... (sourceSets block) ...
+            ```
+        3.  **Ensure `ksp` dependencies for all targets** are declared in the `dependencies` block, pointing to `libs.room.compiler`. This ensures KSP runs for each platform.
+            ```kotlin
+            // shared/build.gradle.kts
+            dependencies {
+                // ... (other dependencies) ...
+                add("kspAndroid", libs.room.compiler)
+                add("kspIosArm64", libs.room.compiler) // KSP for iOS ARM64 devices
+                add("kspIosSimulatorArm64", libs.room.compiler) // KSP for iOS Simulator ARM64
+            }
+            ```
     *   **Manual Migrations (The KMP Way)**:
         *   **CRITICAL RULE**: Do NOT write manual migrations using the old Android `SupportSQLiteDatabase` in `androidMain`. This is incompatible with KMP's `BundledSQLiteDriver` and will crash the iOS build or fail at runtime.
         *   Proper manual KMP migrations must be written in `commonMain` using `androidx.sqlite.SQLiteConnection` (part of the new KMP SQLite driver APIs) so they execute on both Android and iOS.
@@ -236,17 +259,11 @@ Follow the step-by-step guidance, conventions, and patterns below when extending
         *   **Implementation**: Add this line directly to the `RoomDatabase.Builder` inside your `getDatabaseBuilder()` functions in both `androidMain` and `iosMain`.
     *   **AutoMigration Process (For Production Additive Changes)**:
         1.  **Configure `AppDatabase.kt`**: Set `version = [NEW_VERSION]`, `exportSchema = true`, and add `autoMigrations = [AutoMigration(from = [OLD_VERSION], to = [NEW_VERSION])]`. Ensure `TypeConverters` are correctly applied.
-        2.  **Configure `build.gradle.kts`**: Ensure the `room { schemaDirectory(...) }` block is present and that `ksp` arguments for `room.schemaLocation` are passed for *all* KSP targets (`kspAndroid`, `kspIosArm64`, `kspIosSimulatorArm64`). Example for `kspAndroid` (other KSP targets are similar):
-            ```kotlin
-            dependencies {
-                add("kspAndroid", libs.room.compiler) {
-                    arg("room.schemaLocation", "$projectDir/src/commonMain/room/schemas")
-                }
-                // ... other ksp targets
-            }
-            ```
-        3.  **Generate `OLD_VERSION.json` Schema**: Temporarily set `version = [OLD_VERSION]` in `AppDatabase.kt` and remove the `autoMigrations` block. Run a clean build (`./gradlew clean :androidApp:assembleDebug`) to generate the schema file for the old version. Verify its existence.
-        4.  **Re-apply `AutoMigration` and Increment Version**: Set `version = [NEW_VERSION]` in `AppDatabase.kt` and re-add `autoMigrations = [AutoMigration(from = [OLD_VERSION], to = [NEW_VERSION])]`. Run another clean build to validate `AutoMigration` and generate `NEW_VERSION.json`.
+        2.  **Generate `OLD_VERSION.json` Schema**: Temporarily set `version = [OLD_VERSION]` in `AppDatabase.kt` and remove the `autoMigrations` block. Run a clean build (`./gradlew clean :androidApp:assembleDebug`) to generate the schema file for the old version. Verify its existence.
+        3.  **Re-apply `AutoMigration` and Increment Version**: Set `version = [NEW_VERSION]` in `AppDatabase.kt` and re-add `autoMigrations = [AutoMigration(from = [OLD_VERSION], to = [NEW_VERSION])]`. Run another clean build to validate `AutoMigration` and generate `NEW_VERSION.json`.
+    *   **Platform Implementations**: **Do NOT write `actual object AppDatabaseConstructor`.** By suppressing the missing actual warning, we tell KSP to generate the platform-specific actual implementations automatically during the build step.
+    *   **Platform Factories**: Provide standard factory functions (e.g., `fun getDatabase(context: Any? = null): AppDatabase` — notice NO `expect/actual` keyword here) in `androidMain` and `iosMain` that use `Room.databaseBuilder<AppDatabase>(...).setDriver(...).build()`. You should **remove any explicit `.addMigrations()` calls if `AutoMigration` is used for that specific version range, and remove `.fallbackToDestructiveMigration()` as it is no longer needed/recommended.**
+        *   **iOS specific**: You must explicitly call `.setDriver(BundledSQLiteDriver())` on the builder.
     *   **Platform Implementations**: **Do NOT write `actual object AppDatabaseConstructor`.** By suppressing the missing actual warning, we tell KSP to generate the platform-specific actual implementations automatically during the build step.
     *   **Platform Factories**: Provide standard factory functions (e.g., `fun getDatabase(context: Any? = null): AppDatabase` — notice NO `expect/actual` keyword here) in `androidMain` and `iosMain` that use `Room.databaseBuilder<AppDatabase>(...).setDriver(...).build()`. You should **remove any explicit `.addMigrations()` calls if `AutoMigration` is used for that specific version range, and remove `.fallbackToDestructiveMigration()` as it is no longer needed/recommended.**
         *   **iOS specific**: You must explicitly call `.setDriver(BundledSQLiteDriver())` on the builder.
