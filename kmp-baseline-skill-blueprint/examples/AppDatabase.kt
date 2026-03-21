@@ -1,24 +1,29 @@
-package org.example.project.data.room
+package org.example.project.domain
 
-import androidx.room.ConstructFrom
+import androidx.room.ConstructedBy
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.RoomDatabaseConstructor
+import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 
-@Database(entities = [Script::class], version = 1)
-@ConstructFrom(AppDatabaseConstructor::class)
-abstract class AppDatabase : RoomDatabase(), DB {
+import kotlinx.coroutines.Dispatchers
+
+
+@Database(entities = [Script::class], version = 1, exportSchema = true)
+@ConstructedBy(AppDatabaseConstructor::class)
+abstract class AppDatabase : RoomDatabase() {
     abstract fun scriptDao(): ScriptDao
-
-    override fun clearAllTables() {}
 }
 
-// Added to allow for easy mocking/testing if needed and sharing between iOS/Android
-interface DB {
-    fun clearAllTables() {}
-}
-
-@Suppress("NO_ACTUAL_FOR_EXPECT", "EXPECT_ACTUAL_CLASSIFIERS_ARE_IN_BETA_WARNING")
+@Suppress("NO_ACTUAL_FOR_EXPECT")
 expect object AppDatabaseConstructor : RoomDatabaseConstructor<AppDatabase> {
     override fun initialize(): AppDatabase
+}
+
+fun getRoomDatabase(builder: RoomDatabase.Builder<AppDatabase>): AppDatabase {
+    return builder
+        .setDriver(BundledSQLiteDriver())
+        // .setQueryCoroutineContext(Dispatchers.IO)
+        .fallbackToDestructiveMigration(true)
+        .build()
 }

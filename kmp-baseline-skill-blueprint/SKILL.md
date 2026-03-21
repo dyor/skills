@@ -256,7 +256,24 @@ actual fun getInMemoryDatabase(): AppDatabase {
 
 
 
-### Networking & Ktor
+### Networking, API Keys & Dependency Injection
+#### Dependency Injection (Manual AppContainer)
+*   **Rule**: Do **NOT** use Koin for Dependency Injection in KMP iOS apps if you want a reliable, stable build process. Koin's Swift interop for shared modules frequently causes caching nightmares, `Unresolved Reference` errors, and `Cannot find 'KoinHelperKt' in scope` build failures on the Xcode side.
+*   **Implementation**: Use a manual `AppContainer` object injected at the platform root.
+    1.  **Common (`AppContainer.kt`)**: Hold lazy references to shared services (like `GeminiService` or `RoomDatabase`).
+    2.  **Android (`MainActivity.kt`)**: Pass platform dependencies (like `Context`) down by calling `AppContainer.init(...)` in `onCreate`. Use `viewModel { ... }` blocks to resolve viewmodels manually.
+    3.  **iOS (`AppContainerIOS.kt`)**: Create an object holding an `initialize()` function that Xcode can reliably find.
+        ```kotlin
+        object AppContainerIOS {
+            fun initialize() { AppContainer.init(/* platform dependencies */) }
+        }
+        ```
+    4.  **Swift (`iOSApp.swift`)**: Call the initializer.
+        ```swift
+        init() { AppContainerIOS.shared.initialize() }
+        ```
+    5.  **Kotlin to Swift Interop Warning (CRITICAL)**: **NEVER** name a shared Kotlin function `init()` if it will be called from Swift (e.g., `fun init()`). Swift uses `init` exclusively for object constructors, leading to the compiler error `'init' is a member of the type; use 'type(of: ...)'`. Always use a name like `initialize()`.
+
 #### Gemini API Configuration
 *   **Problem**: Encountering 400 Client Errors ("No candidates received") when using older Gemini models.
 *   **Solution**: Ensure you are using the correct endpoint URL and payload structure for the specific model. The `v1beta` endpoint for `gemini-2.5-flash` requires a very specific `contents` array structure. You MUST use the `gemini-2.5-flash` model version as older ones may be deprecated or restricted.
