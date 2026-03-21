@@ -129,28 +129,64 @@ Follow the step-by-step guidance, conventions, and patterns below when extending
     *   **Usage**: Ensure you have `import kotlin.time.Clock` and explicitly `import kotlin.time.Instant` in data classes. Use `@OptIn(ExperimentalTime::class)` where needed.
     *   **Note on `Instant` Deprecation Warning**: If `kotlinx.datetime.Instant` must be used (e.g., in Room `TypeConverters` because it provides necessary `.fromEpochMilliseconds()` methods while `kotlin.time` versions are still stabilizing in KMP), suppress the resulting typealias deprecation warning with `@Suppress("DEPRECATION")` directly on the `Converters` class.
 
-### Database Testing (Room KMP)
-*   **Best Practice**: Separate common test logic from platform-specific setup to avoid `kotlin.test` lifecycle issues with `lateinit` properties.
-*   **Common Test Class (`shared/src/commonTest/kotlin/.../YourDaoTest.kt`):**
-    *   Create an `open class` (e.g., `open class ScriptDaoTest`).
-    *   **NO `@Test` annotations** on the methods.
-    *   Test methods should accept dependencies as parameters: `open fun testInsertion(database: AppDatabase, dao: ScriptDao)`.
-    *   Declare `expect fun getInMemoryDatabase(): AppDatabase`.
-*   **Android Tests (`shared/src/androidTest/kotlin/.../AndroidYourDaoTest.kt`):**
-    *   **CRITICAL**: Use **Android Instrumented Tests** (`androidTest`), *not* Robolectric (`androidHostTest`). The `BundledSQLiteDriver` requires native libraries (`sqliteJni`) that Robolectric cannot load on the desktop JVM, leading to `UnsatisfiedLinkError`.
-    *   Create a class extending the common base: `class AndroidScriptDaoTest : ScriptDaoTest()`.
-    *   Declare local `private lateinit var database: AppDatabase` and `private lateinit var dao: ScriptDao`.
-    *   Use `@Before` and `@After` (from `org.junit`) to manage the database lifecycle using `Room.inMemoryDatabaseBuilder(ApplicationProvider.getApplicationContext(), AppDatabase::class.java)`.
-    *   Override test methods, add `@Test` annotation, and call `super`: `@Test override fun testInsertion() = super.testInsertion(database, dao)`.
-    *   Ensure `androidApp/build.gradle.kts` defines `testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"`.
-    *   **Run**: `:androidApp:connectedDebugAndroidTest`.
-*   **iOS Tests (`shared/src/iosTest/kotlin/.../IosYourDaoTest.kt`):**
-    *   **CRITICAL**: To create an in-memory database on iOS, you MUST use `Room.inMemoryDatabaseBuilder(factory = { AppDatabaseConstructor.initialize() })`. Using `Room.databaseBuilder(name = ":memory:", ...)` will throw an `IllegalArgumentException`.
-    *   Create a class extending the common base: `class IosScriptDaoTest : ScriptDaoTest()`.
-    *   Declare local `private lateinit var database: AppDatabase` and `private lateinit var dao: ScriptDao`.
-    *   Use `@BeforeTest` and `@AfterTest` (from `kotlin.test`) to manage the database lifecycle using your `actual fun getInMemoryDatabase()`.
-    *   Override test methods, add `@Test` annotation, and call `super`: `@Test override fun testInsertion() = super.testInsertion(database, dao)`.
-    *   **Run**: `:shared:iosSimulatorArm64Test`.
+### Database Configuration & Testing (Room KMP)
+Working with Room in KMP requires strict adherence to KSP generation rules. Deviating from this will cause `MissingType`, `PROCESSING_ERROR`, or `Unable to open database` exceptions on iOS.
+
+**1. The `commonMain` Setup (`AppDatabase.kt`)**
+*   **Rule**: Define your `@Database`, `@ConstructedBy`, and an `expect object AppDatabaseConstructor`. Do NOT use `expect fun createDatabase(...)`.
+*   **Rule**: Provide a common `getRoomDatabase(builder)` function that sets the SQLite driver. Do **NOT** use `.setQueryCoroutineContext(Dispatchers.IO)`. `Dispatchers.IO` is not publicly available on Native and will cause `UncompletedCoroutinesError` (hanging tests) on iOS.
+
+```kotlin
+@Database(entities = [Script::class], version = 1, exportSchema = true)
+@ConstructedBy(AppDatabaseConstructor::class)
+abstract class AppDatabase : RoomDatabase() { ... }
+
+@Suppress("NO_ACTUAL_FOR_EXPECT")
+expect object AppDatabaseConstructor : RoomDatabaseConstructor<AppDatabase> {
+    override fun initialize(): AppDatabase
+}
+
+fun getRoomDatabase(builder: RoomDatabase.Builder<AppDatabase>): AppDatabase {
+    return builder
+        .setDriver(BundledSQLiteDriver())
+        .fallbackToDestructiveMigration(true)
+        .build()
+}
+```
+
+**2. The Platform Implementations (`androidMain` & `iosMain`)**
+*   **CRITICAL RULE**: Do **NOT** write `actual object AppDatabaseConstructor` in your platform source sets. KSP automatically generates this. Writing it manually causes `CLASSIFIER_REDECLARATION` or `ACTUAL_WITHOUT_EXPECT` errors.
+*   Only provide the platform-specific `RoomDatabase.Builder`.
+
+*Android (`AppDatabase.android.kt`):*
+```kotlin
+fun getDatabaseBuilder(context: Context): RoomDatabase.Builder<AppDatabase> {
+    val appContext = context.applicationContext
+    val dbFile = appContext.getDatabasePath("factory.db")
+    return Room.databaseBuilder(context = appContext, klass = AppDatabase::class.java, name = dbFile.absolutePath)
+}
+```
+
+*iOS (`AppDatabase.ios.kt`):*
+```kotlin
+fun getDatabaseBuilder(): RoomDatabase.Builder<AppDatabase> {
+    val dbFilePath = documentDirectory() + "/factory.db"
+    return Room.databaseBuilder<AppDatabase>(name = dbFilePath)
+}
+private fun documentDirectory(): String { ... } // standard NSFileManager logic
+```
+
+**3. Testing (Android & iOS)**
+*   **Android Tests (`androidTest`)**: Use `Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java)` and pass it to the common `getRoomDatabase()`.
+*   **iOS Tests (`iosTest`)**: To avoid `IllegalStateException: Unable to open database`, do **not** provide a name or custom factory to the builder. Simply use the zero-arg `Room.inMemoryDatabaseBuilder<AppDatabase>()` and pass it to the common `getRoomDatabase()`.
+
+*iOS Test Example (`IosScriptDaoTest.kt`):*
+```kotlin
+actual fun getInMemoryDatabase(): AppDatabase {
+    val builder = Room.inMemoryDatabaseBuilder<AppDatabase>()
+    return getRoomDatabase(builder)
+}
+```
 
 ### Resources & Compose Multiplatform
 *   **MissingResourceException / Resource Packaging**:
@@ -179,18 +215,12 @@ Follow the step-by-step guidance, conventions, and patterns below when extending
 *   **Reason**: Gradle builds take a long time and will inevitably fail if the code is already structurally broken. You are wasting time and tokens.
 *   **Action**: If you see "new issues" after editing a file, STOP. Analyze the errors. Ensure you have the correct imports, that dependencies are declared in `build.gradle.kts`, and that you have performed a `gradle_sync` if you recently added new dependencies. Fix the code *before* attempting to build.
 
-#### Handling Code Modifications & Errors (CRITICAL AI INSTRUCTION)
-*   **Rule**: **NEVER** run a Gradle build or test task (`gradle_build`, `./gradlew`) if your previous file modification tools (`write_file`, `replace_file_content`, etc.) returned "new issues" or "unresolved references" in their response.
-*   **Reason**: Gradle builds take a long time and will inevitably fail if the code is already structurally broken. You are wasting time and tokens.
-*   **Action**: If you see "new issues" after editing a file, STOP. Analyze the errors. Ensure you have the correct imports, that dependencies are declared in `build.gradle.kts`, and that you have performed a `gradle_sync` if you recently added new dependencies. Fix the code *before* attempting to build.
+
+
 
 #### Running Gradle Tasks (CRITICAL AI INSTRUCTION)
 *   **Rule**: **NEVER** use the raw shell command `run_shell_command("./gradlew ...")` to execute Gradle builds, tests, or syncs unless strictly necessary for a very specific low-level reason. It often hangs, loses buffer output, and causes daemon lockups. 
 *   **Solution**: **ALWAYS** use the dedicated IDE `gradle_build` tool (e.g. `gradle_build(commandLine = "assembleDebug")`) or `gradle_sync` tool. This integrates directly with the IDE's build system and provides clean, structured output and error reporting.
-*   **KMP Android Instrumented Test Task**: The typical Gradle task for running Android Instrumented Tests in a KMP application module is `:androidApp:connectedDebugAndroidTest`. Avoid `:androidApp:androidTestDebug` as it may not be found.
-*   **KMP iOS Simulator Test Task**: The typical Gradle task for running iOS Simulator Tests in a KMP shared module is `:shared:iosSimulatorArm64Test`.
-*   **KMP Android Instrumented Test Task**: The typical Gradle task for running Android Instrumented Tests in a KMP application module is `:androidApp:connectedDebugAndroidTest`. Avoid `:androidApp:androidTestDebug` as it may not be found.
-*   **KMP iOS Simulator Test Task**: The typical Gradle task for running iOS Simulator Tests in a KMP shared module is `:shared:iosSimulatorArm64Test`.
 *   **KMP Android Instrumented Test Task**: The typical Gradle task for running Android Instrumented Tests in a KMP application module is `:androidApp:connectedDebugAndroidTest`. Avoid `:androidApp:androidTestDebug` as it may not be found.
 *   **KMP iOS Simulator Test Task**: The typical Gradle task for running iOS Simulator Tests in a KMP shared module is `:shared:iosSimulatorArm64Test`.
 
@@ -224,49 +254,7 @@ Follow the step-by-step guidance, conventions, and patterns below when extending
 
 *   **Version Catalog**: Update `gradle/libs.versions.toml` frequently but verify compatibility between Kotlin, Compose Multiplatform, and AndroidX libraries. Use `./gradlew :shared:assemble` to quickly check dependency resolution.
 
-#### Room KMP Database Initialization (CRITICAL & CORRECTED)
-*   **Problem**: Encountering `kotlin.IllegalStateException: Room cannot verify the data integrity. Looks like you've changed schema but forgot to update the version number.` or `Cannot create a RoomDatabase without providing a SQLiteDriver via setDriver()` on iOS, or "No matching Room schema directory for the KSP target 'iosSimulatorArm64'".
-*   **Solution**: For Room 2.7.0+ in KMP, you must rely on KSP to generate the constructor for non-Android platforms, but you configure the driver via standard factory functions. For *simple, additive* schema changes (like adding new columns with default values), `AutoMigration` is the preferred and simplest approach. For more complex migrations (e.g., column renames, type changes), manual `Migration` classes might still be necessary.
-    *   **Rule**: When making any schema changes (adding/removing entities, fields, or changing types), you MUST increment the `version` number in the `@Database` annotation.
-    *   **Gradle Configuration (CRITICAL for KSP & Schema Location)**:
-        1.  **Remove `ksp.arg("room.schemaLocation", ...)` from `targets.withType<KotlinTarget>` blocks.** This configuration is problematic for iOS targets and should be handled by the top-level `room { ... }` block.
-        2.  **Add the `room { schemaDirectory(...) }` block** directly at the top level of your `shared/build.gradle.kts` file. This is the correct way to specify the schema location for all KSP targets.
-            ```kotlin
-            // shared/build.gradle.kts
-            // ... (plugins and kotlin blocks) ...
 
-            room {
-                schemaDirectory("$projectDir/schemas") // Defines where schema files are stored
-            }
-
-            // ... (sourceSets block) ...
-            ```
-        3.  **Ensure `ksp` dependencies for all targets** are declared in the `dependencies` block, pointing to `libs.room.compiler`. This ensures KSP runs for each platform.
-            ```kotlin
-            // shared/build.gradle.kts
-            dependencies {
-                // ... (other dependencies) ...
-                add("kspAndroid", libs.room.compiler)
-                add("kspIosArm64", libs.room.compiler) // KSP for iOS ARM64 devices
-                add("kspIosSimulatorArm64", libs.room.compiler) // KSP for iOS Simulator ARM64
-            }
-            ```
-    *   **Manual Migrations (The KMP Way)**:
-        *   **CRITICAL RULE**: Do NOT write manual migrations using the old Android `SupportSQLiteDatabase` in `androidMain`. This is incompatible with KMP's `BundledSQLiteDriver` and will crash the iOS build or fail at runtime.
-        *   Proper manual KMP migrations must be written in `commonMain` using `androidx.sqlite.SQLiteConnection` (part of the new KMP SQLite driver APIs) so they execute on both Android and iOS.
-    *   **Development Fallback (Destructive Migration)**:
-        *   During active development when the schema changes rapidly and preserving data isn't necessary, the safest and easiest way to prevent `IllegalStateException` crashes is to use `.fallbackToDestructiveMigration(dropAllTables = true)`.
-        *   **Implementation**: Add this line directly to the `RoomDatabase.Builder` inside your `getDatabaseBuilder()` functions in both `androidMain` and `iosMain`.
-    *   **AutoMigration Process (For Production Additive Changes)**:
-        1.  **Configure `AppDatabase.kt`**: Set `version = [NEW_VERSION]`, `exportSchema = true`, and add `autoMigrations = [AutoMigration(from = [OLD_VERSION], to = [NEW_VERSION])]`. Ensure `TypeConverters` are correctly applied.
-        2.  **Generate `OLD_VERSION.json` Schema**: Temporarily set `version = [OLD_VERSION]` in `AppDatabase.kt` and remove the `autoMigrations` block. Run a clean build (`./gradlew clean :androidApp:assembleDebug`) to generate the schema file for the old version. Verify its existence.
-        3.  **Re-apply `AutoMigration` and Increment Version**: Set `version = [NEW_VERSION]` in `AppDatabase.kt` and re-add `autoMigrations = [AutoMigration(from = [OLD_VERSION], to = [NEW_VERSION])]`. Run another clean build to validate `AutoMigration` and generate `NEW_VERSION.json`.
-    *   **Platform Implementations**: **Do NOT write `actual object AppDatabaseConstructor`.** By suppressing the missing actual warning, we tell KSP to generate the platform-specific actual implementations automatically during the build step.
-    *   **Platform Factories**: Provide standard factory functions (e.g., `fun getDatabase(context: Any? = null): AppDatabase` — notice NO `expect/actual` keyword here) in `androidMain` and `iosMain` that use `Room.databaseBuilder<AppDatabase>(...).setDriver(...).build()`. You should **remove any explicit `.addMigrations()` calls if `AutoMigration` is used for that specific version range, and remove `.fallbackToDestructiveMigration()` as it is no longer needed/recommended.**
-        *   **iOS specific**: You must explicitly call `.setDriver(BundledSQLiteDriver())` on the builder.
-    *   **Platform Implementations**: **Do NOT write `actual object AppDatabaseConstructor`.** By suppressing the missing actual warning, we tell KSP to generate the platform-specific actual implementations automatically during the build step.
-    *   **Platform Factories**: Provide standard factory functions (e.g., `fun getDatabase(context: Any? = null): AppDatabase` — notice NO `expect/actual` keyword here) in `androidMain` and `iosMain` that use `Room.databaseBuilder<AppDatabase>(...).setDriver(...).build()`. You should **remove any explicit `.addMigrations()` calls if `AutoMigration` is used for that specific version range, and remove `.fallbackToDestructiveMigration()` as it is no longer needed/recommended.**
-        *   **iOS specific**: You must explicitly call `.setDriver(BundledSQLiteDriver())` on the builder.
 
 ### Networking & Ktor
 #### Gemini API Configuration
