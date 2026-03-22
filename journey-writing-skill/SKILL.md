@@ -1,6 +1,6 @@
 ---
 name: journey-writing-skill
-description: This skill helps you write an Android Studio Journey to test and validate your app behavior
+description: Use this skill when you need to test or validate app behavior, write an Android Studio Journey, automate UI testing, or define user flow validation requirements.
 ---
 
 ## Audience & Usage
@@ -23,16 +23,16 @@ Journeys must be saved as artifacts within the Android Studio project structure 
 
 ### Template
 
-    XML
-
-<?xml version="1.0" encoding="utf-8"?> \
-<journey name="[Human Readable Name]"> \
-    <description>[Short description of the experience]</description> \
-    <actions> \
-        <action>[Step 1: Action + Expected Result]</action> \
-        <action>[Step 2: Action + Expected Result]</action> \
-    </actions> \
-</journey> \
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<journey name="[Human Readable Name]">
+    <description>[Short description of the experience]</description>
+    <actions>
+        <action>[Step 1: Action + Expected Result]</action>
+        <action>[Step 2: Action + Expected Result]</action>
+    </actions>
+</journey>
+```
 
 ## Agent Capabilities
 
@@ -71,16 +71,16 @@ To create **effective** Journeys, follow these rules:
 
 **File:** app/src/journeys/calendar_dentist_event.journey.xml
 
-    XML
-
-<?xml version="1.0" encoding="utf-8"?> \
-<journey name="Calendar Dentist Event"> \
-    <description>Creates an event in the calendar to capture a dentist appointment.</description> \
-    <actions> \
-        <action>Open the Google Calendar App.</action> \
-        <action>Create an event with the title "Dentist" that starts at 12:00 PM.</action> \
-        <action>Set the color of the event to yellow.</action> \
-        <action>Save the event and check that it appears in the calendar in the correct color and at the correct time.</action> \
-        <action>Open the details of the event that was just created and check that there is a header image that represents a dentist visit.</action> \
-    </actions> \
-</journey> \
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<journey name="Calendar Dentist Event">
+    <description>Creates an event in the calendar to capture a dentist appointment.</description>
+    <actions>
+        <action>Open the Google Calendar App.</action>
+        <action>Create an event with the title "Dentist" that starts at 12:00 PM.</action>
+        <action>Set the color of the event to yellow.</action>
+        <action>Save the event and check that it appears in the calendar in the correct color and at the correct time.</action>
+        <action>Open the details of the event that was just created and check that there is a header image that represents a dentist visit.</action>
+    </actions>
+</journey>
+```

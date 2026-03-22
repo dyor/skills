@@ -6,11 +6,11 @@ description: Blueprint for estimating and reporting how much of the project desc
 # Blueprint Calculator Skill
 
 ## When to use this skill
-- Use this when generating a new progress calculator for a project or updating the progress metric.
+- Use this when generating a new progress calculator for a project at `project-calculator/SKILL.md`.
 - This is helpful for structuring the report correctly.
 
 ## How to use it
-- Execute the instructions for the AI Assistant below to read `project-guide` and update `project-calculator`.
+- Execute the instructions for the AI Assistant below to read a `project-guide/SKILL.md` and create a `project-calculator/SKILL.md` where the `project-calculator` is used to estimate how much of the work covered by the `project-guide` has been completed.
 
 ---
 

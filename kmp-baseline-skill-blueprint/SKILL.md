@@ -9,7 +9,8 @@ Detailed instructions and best practices for configuring and developing within t
 
 ## When to use this skill
 
-- Use this when initializing a new KMP project that requires Room, Compose Navigation 3, or specific Ktor/Koin configurations.
+- This re-usable skill will be used to create `project-skill/SKILL.md` within a user's codebase (in the /.skills directory in accordance with convention) that will be used to provide details where the agent typically makes mistakes and wastes time and tokens in getting KMP projects properly configured. 
+- Use this when initializing a new KMP project that requires Room, Compose Navigation 3, Koin, Material 3, Calf permissions, and native integrations (e.g., camera and microphone).
 - This is helpful for resolving tricky Gradle dependencies, debugging "MissingResourceException", or diagnosing KMP database migration issues.
 - Use this when working with native UI components in Compose (like `AndroidView` or `UIKitView`) or dealing with native video playback/trimming cross-platform.
 
@@ -20,7 +21,7 @@ Follow the step-by-step guidance, conventions, and patterns below when extending
 ## 1. UI & Responsiveness (Compose Multiplatform)
 
 ### Handling Different Screen Sizes
-*   **Problem**: Mobile apps are portrait/narrow, while larger screens (tablets) are landscape/wide. A simple `fillMaxSize()` layout often looks stretched or huge.
+*   **Problem**: Mobile apps are portrait/narrow, while larger screens (tables) are landscape/wide. A simple `fillMaxSize()` layout often looks stretched or huge.
 *   **Solution**:
     *   Wrap your main screen content in a `Box` with `contentAlignment = Alignment.Center`.
     *   Apply `widthIn(max = 600.dp)` (or appropriate size) to the content container.
@@ -121,8 +122,85 @@ Follow the step-by-step guidance, conventions, and patterns below when extending
     *   **If That Fails Use**: Simple state-based navigation (`var screen by remember { mutableStateOf(...) }`).
 *   **Permissions**:
     *   **Rule**: Use `com.mohamedrejeb.calf:calf-permissions` (Calf) for handling permissions in KMP. It is much more reliable and integrates better with Koin and standard Compose Multiplatform than older libraries like Moko.
-    *   **Android**: Add `<uses-permission android:name="..." />` to `androidApp/src/main/AndroidManifest.xml` (and `<uses-feature>` tags for hardware like cameras).
-    *   **iOS**: Add usage descriptions to `iosApp/iosApp/Info.plist` (e.g., `NSCameraUsageDescription`, `NSMicrophoneUsageDescription`).
+    *   **Android Setup**:
+        1.  Add `implementation(libs.calf.permissions)` to `shared/build.gradle.kts` in `commonMain`.
+        2.  Declare `<uses-permission android:name="..." />` in `androidApp/src/main/AndroidManifest.xml` (e.g., `CAMERA`, `RECORD_AUDIO`, `READ_EXTERNAL_STORAGE`, `WRITE_EXTERNAL_STORAGE`). For CameraX, also include `<uses-feature android:name="android.hardware.camera" />`.
+    *   **iOS Setup (CRITICAL for Functionality)**:
+        1.  Add `implementation(libs.calf.permissions)` to `shared/build.gradle.kts` in `commonMain`.
+        2.  **CRITICAL**: Add ALL relevant usage descriptions to `iosApp/iosApp/Info.plist`. Without these, iOS will silently deny permissions or crash your app when attempting to access hardware. **Ensure all `NS...UsageDescription` keys are present, even if not immediately used in the current feature set.**
+            ```xml
+            <key>NSCameraUsageDescription</key>
+            <string>This app needs camera access to record videos.</string>
+            <key>NSMicrophoneUsageDescription</key>
+            <string>This app needs microphone access to record audio.</string>
+            <key>NSPhotoLibraryUsageDescription</key>
+            <string>This app needs photo library access to save your videos.</string>
+            <key>NSPhotoLibraryAddUsageDescription</key>
+            <string>This app needs photo library access to save your videos.</string>
+            ```
+        3.  **Workaround for iOS Permission Dialogs (CRITICAL)**: For iOS, to reliably trigger system permission dialogs, **always request permissions individually** rather than using `rememberMultiplePermissionsState`. This ensures each dialog is correctly presented and handled by the native system.
+
+    *   **Common Usage (Individual Requests REQUIRED for iOS)**:
+        1.  In your Composable, use individual `rememberPermissionState(Permission.Type)` for each permission (e.g., `Permission.Camera`, `Permission.RecordAudio`).
+        2.  Use a `LaunchedEffect` to `launchPermissionRequest()` for each permission **sequentially** if its `status` is not `PermissionStatus.Granted`. This helps ensure each dialog is presented separately and correctly handled by the native system.
+        3.  Check `permissionState.status == PermissionStatus.Granted` before accessing hardware.
+        ```kotlin
+        @OptIn(ExperimentalPermissionsApi::class)
+        @Composable
+        fun AppPermissionsHandler(content: @Composable () -> Unit) {
+            val cameraPermissionState = rememberPermissionState(Permission.Camera)
+            val recordAudioPermissionState = rememberPermissionState(Permission.RecordAudio)
+
+            // Logging for initial state and any changes
+            LaunchedEffect(cameraPermissionState.status, recordAudioPermissionState.status) {
+                println("AppPermissionsHandler: Camera status = ${cameraPermissionState.status}")
+                println("AppPermissionsHandler: RecordAudio status = ${recordAudioPermissionState.status}")
+            }
+
+            val allPermissionsGranted = cameraPermissionState.status == PermissionStatus.Granted &&
+                    recordAudioPermissionState.status == PermissionStatus.Granted
+
+            if (allPermissionsGranted) {
+                content()
+            } else {
+                // Pass individual states to a screen that requests them one by one
+                PermissionRequestScreen(cameraPermissionState, recordAudioPermissionState, content)
+            }
+        }
+
+        @OptIn(ExperimentalPermissionsApi::class)
+        @Composable
+        fun PermissionRequestScreen(
+            cameraPermissionState: PermissionState,
+            recordAudioPermissionState: PermissionState,
+            content: @Composable () -> Unit
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+            ) {
+                when {
+                    cameraPermissionState.status != PermissionStatus.Granted -> {
+                        Text("Camera permission required.")
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Button(onClick = { cameraPermissionState.launchPermissionRequest() }) {
+                            Text("Request Camera")
+                        }
+                    }
+                    recordAudioPermissionState.status != PermissionStatus.Granted -> {
+                        Text("Microphone permission required.")
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Button(onClick = { recordAudioPermissionState.launchPermissionRequest() }) {
+                            Text("Request Microphone")
+                        }
+                    }
+                    else -> {
+                        content()
+                    }
+                }
+            }
+        }
+        ```
 *   **Date and Time Handling**:
     *   **Rule**: When working with `Instant` (e.g., for database timestamps), use `kotlin.time.Clock.System.now()` to obtain the current time.
     *   **Reason**: In `kotlinx-datetime` versions 0.7.0 and newer, `kotlinx.datetime.Clock.now()` and `kotlinx.datetime.Instant.now()` were removed. `kotlin.time.Clock.System.now()` from the Kotlin standard library is the correct replacement for getting the current `Instant` in modern Kotlin Multiplatform projects.
@@ -219,7 +297,7 @@ actual fun getInMemoryDatabase(): AppDatabase {
 
 
 #### Running Gradle Tasks (CRITICAL AI INSTRUCTION)
-*   **Rule**: **NEVER** use the raw shell command `run_shell_command("./gradlew ...")` to execute Gradle builds, tests, or syncs unless strictly necessary for a very specific low-level reason. It often hangs, loses buffer output, and causes daemon lockups. 
+*   **Rule**: **NEVER** use the raw shell command `run_shell_command("./gradlew ...")` to execute Gradle builds, tests, or syncs unless strictly necessary for a very specific low-level reason. It often hangs, loses buffer output, and causes daemon lockups.
 *   **Solution**: **ALWAYS** use the dedicated IDE `gradle_build` tool (e.g. `gradle_build(commandLine = "assembleDebug")`) or `gradle_sync` tool. This integrates directly with the IDE's build system and provides clean, structured output and error reporting.
 *   **KMP Android Instrumented Test Task**: The typical Gradle task for running Android Instrumented Tests in a KMP application module is `:androidApp:connectedDebugAndroidTest`. Avoid `:androidApp:androidTestDebug` as it may not be found.
 *   **KMP iOS Simulator Test Task**: The typical Gradle task for running iOS Simulator Tests in a KMP shared module is `:shared:iosSimulatorArm64Test`.
@@ -249,10 +327,18 @@ actual fun getInMemoryDatabase(): AppDatabase {
 *   **`libs.versions.toml` formatting**: ALWAYS use hyphens (`-`) for library names instead of camelCase in the `[libraries]` and `[plugins]` block to remain consistent and avoid "Unresolved reference" errors during Gradle sync.
 *   **Android Target Configuration in KMP**: When using the `com.android.kotlin.multiplatform.library` plugin (which is modern), do NOT use a standalone `android { ... }` block in `shared/build.gradle.kts`. Instead, configure the android specifics directly within the `androidLibrary { ... }` block inside the `kotlin { ... }` block. Ensure you set the `jvmTarget` inside `compilerOptions`.
 
-*   **Target Hygiene (CRITICAL FIRST STEP)**: 
+*   **Target Hygiene (CRITICAL FIRST STEP)**:
     *   **Rule**: If a project ONLY targets Android and iOS, you MUST immediately remove `jvm()`, `js {}`, and `wasmJs {}` blocks from `shared/build.gradle.kts`, delete their corresponding source sets (`jsMain`, `wasmJsMain`, `jvmMain`), and remove desktop/web apps from `settings.gradle.kts`. Failing to do this will cause dependency resolution to fail violently when adding mobile-only or mobile-specific KMP libraries.
 
 *   **Version Catalog**: Update `gradle/libs.versions.toml` frequently but verify compatibility between Kotlin, Compose Multiplatform, and AndroidX libraries. Use `./gradlew :shared:assemble` to quickly check dependency resolution.
+
+*   **Kotlin Compiler Execution Strategy (iOS Permissions Workaround)**:
+    *   **Problem**: Stubborn iOS permission dialogs not appearing despite correct `Info.plist` and `calf-permissions` usage (especially with Kotlin 2.x beta versions).
+    *   **Solution**: Explicitly set the Kotlin compiler execution strategy to `daemon` in `gradle.properties`. This can mitigate certain threading or environment issues with the Kotlin/Native compiler that affect UI interactions.
+    *   **Note**: This flag was necessary with Kotlin `2.3.20-Beta2` but should be removed if using `2.3.10` or a stable Kotlin 2.x release that resolves these issues internally.
+    ```properties
+    kotlin.compiler.execution.strategy=daemon
+    ```
 
 
 
@@ -278,7 +364,7 @@ actual fun getInMemoryDatabase(): AppDatabase {
 *   **Problem**: Encountering 400 Client Errors ("No candidates received") when using older Gemini models.
 *   **Solution**: Ensure you are using the correct endpoint URL and payload structure for the specific model. The `v1beta` endpoint for `gemini-2.5-flash` requires a very specific `contents` array structure. You MUST use the `gemini-2.5-flash` model version as older ones may be deprecated or restricted.
     *   **Endpoint**: `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$apiKey`
-    *   **JSON Structure**: 
+    *   **JSON Structure**:
         ```json
         { "contents": [ { "parts": [ { "text": "Your prompt here" } ] } ] }
         ```
@@ -296,7 +382,7 @@ actual fun getInMemoryDatabase(): AppDatabase {
 *   **Problem**: Not seeing all the code modules, or project files look broken.
 *   **Solution**: **Ensure Android Studio project view is changed from "Android View" to "Project View"** using the dropdown in the top-left of the Project tool window. This is required to see all KMP directories like `shared` and `iosApp`.
 *   **Problem**: Newly added resources (e.g., images in `composeResources`) are not found at runtime (causing `MissingResourceException`), or stubborn dependency/build issues persist despite correct configuration.
-*   **Solution**: Android Studio and Gradle caches can get out of sync, especially in KMP projects. 
+*   **Solution**: Android Studio and Gradle caches can get out of sync, especially in KMP projects.
     1. Run a clean build (`./gradlew clean assembleDebug`).
     2. If that fails, go to **File -> Invalidate Caches... -> Check 'Clear file system cache and Local History' -> Invalidate and Restart**.
 
@@ -313,7 +399,7 @@ actual fun getInMemoryDatabase(): AppDatabase {
 
 #### iOS Deployment Troubleshooting
 *   **Problem**: Deployment fails with the error `The developer disk image could not be mounted on this device.`
-*   **Solution**: The run configuration is currently pointing to a physical iPhone that is either disconnected or locked. 
+*   **Solution**: The run configuration is currently pointing to a physical iPhone that is either disconnected or locked.
     *   **User Action**: Change the deployment target in Android Studio / Xcode to a running iOS Simulator, or ensure the physical device is plugged in and unlocked.
 
 ## 3. Useful Reference Documentation

@@ -14,7 +14,7 @@ description: Blueprint outlining the initial prompt steps for setting up the man
 
 ---
 
-I want you to initialize this new KMP project by executing the blueprint skills defined in the `/Users/mattdyor/.skills/` directory to generate their corresponding operational files in the project's `.skills/` directory. 
+I want you to initialize this new KMP project by executing the blueprint skills defined in the `/Users/mattdyor/.skills/` directory to generate their corresponding codebase-speicfic files in the project's `.skills/` directory. 
 
 Please follow these exact steps sequentially. Do not start executing the actual development tasks yet; your goal is purely to generate the management and tracking files.
 
@@ -28,7 +28,7 @@ Please follow these exact steps sequentially. Do not start executing the actual 
 3. **Generate the `project-guide`:**
    Execute the instructions in `/Users/mattdyor/.skills/project-guide-blueprint/SKILL.md` to create the `.skills/project-guide/SKILL.md` file.
    *Here are the core details for the project you should use to populate the guide:*
-   - **App Name:** Factory-10
+   - **App Name:** Factory
    - **Target Audience:** KMP App Builders
    - **Core Problem:** Streamlining the creation and publication of YouTube Short educational videos about the app. 
    - **Visual Style/Theme:** Film noir-classic old school movie theme. 
