@@ -9,6 +9,12 @@ Detailed instructions and best practices for configuring and developing within t
 
 ## When to use this skill
 
+### Materialization Instructions
+When applying this blueprint to a new project:
+1. Create a new directory in the project's root called `.skills/project-skill/`.
+2. Copy this blueprint's `SKILL.md` into `.skills/project-skill/SKILL.md`.
+3. **CRITICAL**: You MUST copy the entire `examples/` directory from this blueprint's directory into the new `.skills/project-skill/` directory so that it sits alongside the new `SKILL.md`.
+
 - This re-usable skill will be used to create `project-skill/SKILL.md` within a user's codebase (in the /.skills directory in accordance with convention) that will be used to provide details where the agent typically makes mistakes and wastes time and tokens in getting KMP projects properly configured. 
 - Use this when initializing a new KMP project that requires Room, Compose Navigation 3, Koin, Material 3, Calf permissions, and native integrations (e.g., camera and microphone).
 - This is helpful for resolving tricky Gradle dependencies, debugging "MissingResourceException", or diagnosing KMP database migration issues.

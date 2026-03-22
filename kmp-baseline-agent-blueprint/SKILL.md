@@ -19,8 +19,8 @@ description: Blueprint for writing or updating an AGENTS.md file that includes a
 ## Description
 This document provides predefined instructions for an AI assistant to create or update an `AGENTS.md` file in the root directory.
 
-## Trigger / Usage
-To use this skill in any project, ensure this file is in the blueprint skills directory and prompt the AI to generate or update `AGENTS.md` in accordance with it.
+## Materialization Instructions / Usage
+To use this skill in a new project, copy or generate the contents of this blueprint into the `AGENTS.md` file at the root directory of the user's project (`/AGENTS.md`). Then, prompt the AI to generate or update `AGENTS.md` in accordance with it.
 
 ---
 

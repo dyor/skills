@@ -19,8 +19,8 @@ description: Blueprint for generating and maintaining a project-validation plan 
 ## Description
 This document provides instructions for generating and maintaining a `project-validation` file that focuses strictly on testing **app-specific behavior and core Domain UseCases**, rather than generic app tests (e.g., standard "test database migrations"). It ensures the validation plan directly mirrors the actual features and behavior outlined in the project's `project-guide`.
 
-## Trigger / Usage
-To use this skill in any project, ensure this file is in the blueprint skills directory and prompt the AI to generate the validation plan based on it.
+## Materialization Instructions / Usage
+To materialize this skill in a new project, copy or generate the contents of this blueprint into a new file located at `.skills/project-validation/SKILL.md` within the user's project codebase. Then, prompt the AI to generate the validation plan based on it.
 
 ---
 

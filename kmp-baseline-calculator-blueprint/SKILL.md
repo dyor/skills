@@ -19,8 +19,8 @@ description: Blueprint for estimating and reporting how much of the project desc
 ## Description
 This document provides predefined instructions for an AI assistant to estimate and report how much of the project described in the `.skills/project-guide/SKILL.md` file has been completed. 
 
-## Trigger / Usage
-To use this skill in any project, ensure this file is in the blueprint skills directory and prompt the AI to calculate the project progress in accordance with it.
+## Materialization Instructions / Usage
+To materialize this skill in a new project, copy or generate the contents of this blueprint into a new file located at `.skills/project-calculator/SKILL.md` within the user's project codebase. Then, prompt the AI to calculate the project progress in accordance with it.
 
 ---
 
