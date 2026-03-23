@@ -1,5 +1,5 @@
 ---
-name: kmp-baseline-skill-blueprint
+name: project-skill
 description: Provides the foundational architecture, best practices, and workarounds for a Kotlin Multiplatform (Android & iOS) project. Use when setting up or extending a KMP project using Compose, Room, Navigation 3, and native integrations.
 ---
 
@@ -128,7 +128,7 @@ Follow the step-by-step guidance, conventions, and patterns below when extending
     *   **If That Fails Use**: Simple state-based navigation (`var screen by remember { mutableStateOf(...) }`).
 *   **Permissions**:
     *   **Rule**: Use `com.mohamedrejeb.calf:calf-permissions` (Calf) for handling permissions in KMP. It is much more reliable and integrates better with Koin and standard Compose Multiplatform than older libraries like Moko.
-    *   **Android Setup**:
+    *   **Android Setup**: 
         1.  Add `implementation(libs.calf.permissions)` to `shared/build.gradle.kts` in `commonMain`.
         2.  Declare `<uses-permission android:name="..." />` in `androidApp/src/main/AndroidManifest.xml` (e.g., `CAMERA`, `RECORD_AUDIO`, `READ_EXTERNAL_STORAGE`, `WRITE_EXTERNAL_STORAGE`). For CameraX, also include `<uses-feature android:name="android.hardware.camera" />`.
     *   **iOS Setup (CRITICAL for Functionality)**:
@@ -146,7 +146,7 @@ Follow the step-by-step guidance, conventions, and patterns below when extending
             ```
         3.  **Workaround for iOS Permission Dialogs (CRITICAL)**: For iOS, to reliably trigger system permission dialogs, **always request permissions individually** rather than using `rememberMultiplePermissionsState`. This ensures each dialog is correctly presented and handled by the native system.
 
-    *   **Common Usage (Individual Requests REQUIRED for iOS)**:
+    *   **Common Usage (Individual Requests REQUIRED for iOS)**: 
         1.  In your Composable, use individual `rememberPermissionState(Permission.Type)` for each permission (e.g., `Permission.Camera`, `Permission.RecordAudio`).
         2.  Use a `LaunchedEffect` to `launchPermissionRequest()` for each permission **sequentially** if its `status` is not `PermissionStatus.Granted`. This helps ensure each dialog is presented separately and correctly handled by the native system.
         3.  Check `permissionState.status == PermissionStatus.Granted` before accessing hardware.
@@ -299,11 +299,8 @@ actual fun getInMemoryDatabase(): AppDatabase {
 *   **Reason**: Gradle builds take a long time and will inevitably fail if the code is already structurally broken. You are wasting time and tokens.
 *   **Action**: If you see "new issues" after editing a file, STOP. Analyze the errors. Ensure you have the correct imports, that dependencies are declared in `build.gradle.kts`, and that you have performed a `gradle_sync` if you recently added new dependencies. Fix the code *before* attempting to build.
 
-
-
-
 #### Running Gradle Tasks (CRITICAL AI INSTRUCTION)
-*   **Rule**: **NEVER** use the raw shell command `run_shell_command("./gradlew ...")` to execute Gradle builds, tests, or syncs unless strictly necessary for a very specific low-level reason. It often hangs, loses buffer output, and causes daemon lockups.
+*   **Rule**: **NEVER** use the raw shell command `run_shell_command("./gradlew ...")` to execute Gradle builds, tests, or syncs unless strictly necessary for a very specific low-level reason. It often hangs, loses buffer output, and causes daemon lockups. 
 *   **Solution**: **ALWAYS** use the dedicated IDE `gradle_build` tool (e.g. `gradle_build(commandLine = "assembleDebug")`) or `gradle_sync` tool. This integrates directly with the IDE's build system and provides clean, structured output and error reporting.
 *   **KMP Android Instrumented Test Task**: The typical Gradle task for running Android Instrumented Tests in a KMP application module is `:androidApp:connectedDebugAndroidTest`. Avoid `:androidApp:androidTestDebug` as it may not be found.
 *   **KMP iOS Simulator Test Task**: The typical Gradle task for running iOS Simulator Tests in a KMP shared module is `:shared:iosSimulatorArm64Test`.
@@ -333,7 +330,70 @@ actual fun getInMemoryDatabase(): AppDatabase {
 *   **`libs.versions.toml` formatting**: ALWAYS use hyphens (`-`) for library names instead of camelCase in the `[libraries]` and `[plugins]` block to remain consistent and avoid "Unresolved reference" errors during Gradle sync.
 *   **Android Target Configuration in KMP**: When using the `com.android.kotlin.multiplatform.library` plugin (which is modern), do NOT use a standalone `android { ... }` block in `shared/build.gradle.kts`. Instead, configure the android specifics directly within the `androidLibrary { ... }` block inside the `kotlin { ... }` block. Ensure you set the `jvmTarget` inside `compilerOptions`.
 
-*   **Target Hygiene (CRITICAL FIRST STEP)**:
+*   **Secure API Key Injection (BuildConfig)**:
+    *   **Problem**: Securely injecting API keys (e.g., `GEMINI_API_KEY`) into a Kotlin Multiplatform project so they are available at compile time across all targets, without being hardcoded or committed to version control.
+    *   **Solution**: Utilize the `com.github.gmazzo.buildconfig` plugin.
+        1.  **`local.properties`**: Store your API key in `local.properties` (e.g., `GEMINI_API_KEY=your_api_key_here`). This file should be `.gitignored`.
+        2.  **`settings.gradle.kts`**: Load `local.properties` into `rootProject.extra` so its properties are accessible to all subprojects.
+            ```kotlin
+            import java.util.Properties
+            import java.io.FileInputStream
+
+            // ... other settings ...
+
+            rootProject.name = "KotlinProject" // Replace with your root project name
+
+            // Load local.properties for API keys and other local configurations
+            val localProperties = Properties()
+            val localPropertiesFile = rootProject.file("local.properties")
+            if (localPropertiesFile.exists()) {
+                FileInputStream(localPropertiesFile).use { input ->
+                    localProperties.load(input)
+                }
+                localProperties.forEach { key, value ->
+                    rootProject.extra.set(key as String, value)
+                }
+            }
+            enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
+
+            // ... rest of settings.gradle.kts ...
+            ```
+        3.  **`shared/build.gradle.kts`**: Apply the `buildConfig` plugin and configure `buildConfigField` to inject the API key.
+            ```kotlin
+            plugins {
+                // ... other plugins ...
+                alias(libs.plugins.buildConfig)
+            }
+
+            // ... other configurations ...
+
+            buildConfig {
+                // Configure buildConfig to generate BuildConfig.GEMINI_API_KEY
+                // Access the API key from rootProject.extra (loaded from local.properties)
+                buildConfigField("String", "GEMINI_API_KEY", ""${rootProject.extra["GEMINI_API_KEY"]}"")
+                packageName("org.example.project.shared") // Set your common module's package name
+            }
+
+            // ... rest of shared/build.gradle.kts ...
+            ```
+    *   **Usage in Common Kotlin Code**: Access the API key via `BuildConfig.GEMINI_API_KEY`.
+        ```kotlin
+        import org.example.project.BuildConfig // Ensure this import is correct based on your package name
+
+        class GeminiService {
+            // ...
+            suspend fun generateScript(prompt: String): String {
+                // ...
+                val response = httpClient.post("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent") {
+                    url { parameters.append("key", BuildConfig.GEMINI_API_KEY) }
+                    // ...
+                }
+                // ...
+            }
+        }
+        ```
+
+*   **Target Hygiene (CRITICAL FIRST STEP)**: 
     *   **Rule**: If a project ONLY targets Android and iOS, you MUST immediately remove `jvm()`, `js {}`, and `wasmJs {}` blocks from `shared/build.gradle.kts`, delete their corresponding source sets (`jsMain`, `wasmJsMain`, `jvmMain`), and remove desktop/web apps from `settings.gradle.kts`. Failing to do this will cause dependency resolution to fail violently when adding mobile-only or mobile-specific KMP libraries.
 
 *   **Version Catalog**: Update `gradle/libs.versions.toml` frequently but verify compatibility between Kotlin, Compose Multiplatform, and AndroidX libraries. Use `./gradlew :shared:assemble` to quickly check dependency resolution.
@@ -370,7 +430,7 @@ actual fun getInMemoryDatabase(): AppDatabase {
 *   **Problem**: Encountering 400 Client Errors ("No candidates received") when using older Gemini models.
 *   **Solution**: Ensure you are using the correct endpoint URL and payload structure for the specific model. The `v1beta` endpoint for `gemini-2.5-flash` requires a very specific `contents` array structure. You MUST use the `gemini-2.5-flash` model version as older ones may be deprecated or restricted.
     *   **Endpoint**: `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$apiKey`
-    *   **JSON Structure**:
+    *   **JSON Structure**: 
         ```json
         { "contents": [ { "parts": [ { "text": "Your prompt here" } ] } ] }
         ```
@@ -388,7 +448,7 @@ actual fun getInMemoryDatabase(): AppDatabase {
 *   **Problem**: Not seeing all the code modules, or project files look broken.
 *   **Solution**: **Ensure Android Studio project view is changed from "Android View" to "Project View"** using the dropdown in the top-left of the Project tool window. This is required to see all KMP directories like `shared` and `iosApp`.
 *   **Problem**: Newly added resources (e.g., images in `composeResources`) are not found at runtime (causing `MissingResourceException`), or stubborn dependency/build issues persist despite correct configuration.
-*   **Solution**: Android Studio and Gradle caches can get out of sync, especially in KMP projects.
+*   **Solution**: Android Studio and Gradle caches can get out of sync, especially in KMP projects. 
     1. Run a clean build (`./gradlew clean assembleDebug`).
     2. If that fails, go to **File -> Invalidate Caches... -> Check 'Clear file system cache and Local History' -> Invalidate and Restart**.
 
