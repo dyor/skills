@@ -1,15 +1,15 @@
 ---
-name: project-guide-blueprint
+name: kmp-baseline-guide-blueprint
 description: The central source of truth for planning, tracking progress, and orchestrating work between the AI Agent and the User in this codebase.
 ---
 
-# Skill: Project Orchestration via project-guide/SKILL.md
+# Skill: Project Orchestration via kmp-baseline-guide-task/SKILL.md
 
 ## Overview
-This re-usable skill provides the structure and instructions for an AI Agent to generate, maintain, and execute a `project-guide/SKILL.md` file specific to the user's codebase. The `project-guide/SKILL.md` is the central source of truth for planning, tracking progress, and orchestrating work between the AI Agent and the User in a codebase during a buildout of a baseline KMP project (e.g., adding baseline KMP cababilities to a KMP template).
+This re-usable skill provides the structure and instructions for an AI Agent to generate, maintain, and execute a `kmp-baseline-guide-task/SKILL.md` file specific to the user's codebase. The `kmp-baseline-guide-task/SKILL.md` is the central source of truth for planning, tracking progress, and orchestrating work between the AI Agent and the User in a codebase during a buildout of a baseline KMP project (e.g., adding baseline KMP cababilities to a KMP template).
 
-## Materialization Instructions for Generating a New `project-guide`
-When placed in a new codebase and asked to create a `project-guide/SKILL.md`, create the file at `.skills/project-guide/SKILL.md`. Ask for details on the project requirements and generate the document following this exact structure:
+## Materialization Instructions for Generating a New `kmp-baseline-guide-task`
+When placed in a new codebase and asked to create a `kmp-baseline-guide-task/SKILL.md`, create the file at `.skills/kmp-baseline-guide-task/SKILL.md`. Ask for details on the project requirements and generate the document following this exact structure:
 
 ### 1. Project Overview
 Define the high-level intent, core architecture, and stylistic guidelines of the project. When information is needed from the user, such as [App Name] or [Architecture]
