@@ -54,6 +54,91 @@ The heart of the application. It is consumed by all other platform-specific modu
 *   **Resources:**
     *   `composeResources`: Shared resources (images, strings, fonts, etc.) are located in `shared/src/commonMain/composeResources`. These are accessed via `Res` generated class.
 
+### BuildConfig for API Keys & Sensitive Information
+*   **Problem**: How to manage API keys (e.g., Gemini API Key) and other sensitive configurations that differ per build type (debug vs. release) or platform without hardcoding them.
+*   **Solution**: Use Kotlin Multiplatform's `BuildConfig` capabilities combined with `local.properties`.
+
+1.  **Gradle Setup (`shared/build.gradle.kts`):**
+    Ensure `buildConfig` plugin is applied and configured.
+    ```kotlin
+    plugins {
+        // ...
+        id("com.github.gmazzo.buildconfig").version("3.1.0") // Or the latest version
+    }
+
+    // ... inside kotlin { ... } block
+    sourceSets {
+        commonMain.dependencies {
+            // ...
+        }
+        androidMain.dependencies {
+            // ...
+        }
+        iosMain.dependencies {
+            // ...
+        }
+    }
+
+    buildConfig {
+        // Common configuration for all source sets
+        packageName.set("org.example.project") // Your base package name
+        commonMain {
+            // Define build config fields common to all platforms
+            buildConfigField("String", "GEMINI_API_KEY", "\"${System.getenv("GEMINI_API_KEY")}\"")
+            // You can also read from local.properties for development
+            // buildConfigField("String", "GEMINI_API_KEY", ""${project.findProperty("GEMINI_API_KEY") ?: ""}"")
+        }
+        // Platform-specific overrides if needed (e.g., for different API keys)
+        androidMain {
+            // android-specific BuildConfig fields
+        }
+        iosMain {
+            // ios-specific BuildConfig fields
+        }
+    }
+    ```
+
+2.  **`local.properties` (at project root):**
+    Create or update `local.properties` to store your API key. This file is NOT committed to VCS.
+    ```properties
+    GEMINI_API_KEY=YOUR_GEMINI_API_KEY_HERE
+    ```
+
+3.  **Importing and Using `BuildConfig` in a Service (e.g., `GeminiServiceImpl.kt`):**
+    ```kotlin
+    package org.example.project.data.gemini // Replace with your service's package
+
+    import org.example.project.BuildConfig // Import the generated BuildConfig class
+
+    class GeminiServiceImpl {
+
+        fun generateScript(prompt: String): String {
+            val geminiApiKey = BuildConfig.GEMINI_API_KEY
+            // Use geminiApiKey in your API call
+            return "Generated script using API Key: $geminiApiKey for prompt: $prompt"
+        }
+
+        // How to override in another function (example using a different key)
+        fun anotherFunctionWithDifferentKey(altPrompt: String): String {
+            val anotherApiKey = BuildConfig.GEMINI_API_KEY // Still refers to the same key
+            // If you need a *different* key, you'd define it as a separate BuildConfigField
+            return "Another function with key: $anotherApiKey for alt prompt: $altPrompt"
+        }
+    }
+    ```
+    **Explanation**: `BuildConfig` generates a class (`org.example.project.BuildConfig` in this example) containing static fields for each `buildConfigField` defined in your `build.gradle.kts`. You simply import this class and access the fields directly.
+
+4.  **Accessing properties from `local.properties` in Gradle (for `buildConfigField`):**
+    The `buildConfigField` can directly read from `local.properties` using `project.findProperty("YOUR_KEY")`.
+    ```kotlin
+    buildConfig {
+        commonMain {
+            buildConfigField("String", "GEMINI_API_KEY", ""${project.findProperty("GEMINI_API_KEY") ?: ""}"")
+        }
+    }
+    ```
+    This approach ensures that during local development, the API key from `local.properties` is used, while CI/CD environments can inject it via environment variables.
+
 ### Platform Modules
 1.  **Android (`:androidApp`)**
     *   Standard Android App structure.
