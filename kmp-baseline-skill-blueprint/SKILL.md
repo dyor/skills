@@ -1,5 +1,5 @@
 ---
-name: project-skill
+name: kmp-baseline-skill-blueprint
 description: Provides the foundational architecture, best practices, and workarounds for a Kotlin Multiplatform (Android & iOS) project. Use when setting up or extending a KMP project using Compose, Room, Navigation 3, and native integrations.
 ---
 
@@ -219,7 +219,6 @@ Working with Room in KMP requires strict adherence to KSP generation rules. Devi
 **1. The `commonMain` Setup (`AppDatabase.kt`)**
 *   **Rule**: Define your `@Database`, `@ConstructedBy`, and an `expect object AppDatabaseConstructor`. Do NOT use `expect fun createDatabase(...)`.
 *   **Rule**: Provide a common `getRoomDatabase(builder)` function that sets the SQLite driver. Do **NOT** use `.setQueryCoroutineContext(Dispatchers.IO)`. `Dispatchers.IO` is not publicly available on Native and will cause `UncompletedCoroutinesError` (hanging tests) on iOS.
-*   **Rule (DAO Inserts)**: When defining Room DAO `@Insert` methods, default to `suspend fun insert(entity: Entity)` returning `Unit`. Do not expect it to return a `Long` ID unless explicitly configured, as this causes mismatched expectations in the ViewModel layer.
 
 ```kotlin
 @Database(entities = [Script::class], version = 1, exportSchema = true)
@@ -241,7 +240,6 @@ fun getRoomDatabase(builder: RoomDatabase.Builder<AppDatabase>): AppDatabase {
 
 **2. The Platform Implementations (`androidMain` & `iosMain`)**
 *   **CRITICAL RULE**: Do **NOT** write `actual object AppDatabaseConstructor` in your platform source sets. KSP automatically generates this. Writing it manually causes `CLASSIFIER_REDECLARATION` or `ACTUAL_WITHOUT_EXPECT` errors.
-*   **CRITICAL RULE (App Dependencies)**: If your `androidApp` or `iosApp` module initializes the database (e.g., in `MainActivity.kt`), you **MUST** add `implementation(libs.room.runtime)` to `androidApp/build.gradle.kts`. `shared` module `implementation` dependencies are not exported to the consumer application. Without this, the Android app cannot resolve the `RoomDatabase.Builder` return type and the build will fail with `Cannot access class 'RoomDatabase.Builder'`.
 *   Only provide the platform-specific `RoomDatabase.Builder`.
 
 *Android (`AppDatabase.android.kt`):*
@@ -334,21 +332,34 @@ actual fun getInMemoryDatabase(): AppDatabase {
 
 *   **Secure API Key Injection (BuildConfig)**:
     *   **Problem**: Securely injecting API keys (e.g., `GEMINI_API_KEY`) into a Kotlin Multiplatform project so they are available at compile time across all targets, without being hardcoded or committed to version control.
-    *   **Solution**: Utilize the `com.github.gmazzo.buildconfig` plugin and load `local.properties` directly in your build script.
-        1.  **`local.properties`**: Store your API key in `local.properties` (e.g., `GEMINI_API_KEY="your_api_key_here"`). This file should be `.gitignored`. Ensure the value is wrapped in quotes.
-        2.  **`shared/build.gradle.kts`**: Load the properties directly at the top of the file and configure the `buildConfig` block. Do NOT try to load this via `settings.gradle.kts` `extra` properties as it causes Kotlin DSL resolution errors.
+    *   **Solution**: Utilize the `com.github.gmazzo.buildconfig` plugin.
+        1.  **`local.properties`**: Store your API key in `local.properties` (e.g., `GEMINI_API_KEY=your_api_key_here`). This file should be `.gitignored`.
+        2.  **`settings.gradle.kts`**: Load `local.properties` into `rootProject.extra` so its properties are accessible to all subprojects.
             ```kotlin
-            import org.jetbrains.kotlin.gradle.dsl.JvmTarget
             import java.util.Properties
+            import java.io.FileInputStream
 
-            // Load local.properties for API keys
+            // ... other settings ...
+
+            rootProject.name = "KotlinProject" // Replace with your root project name
+
+            // Load local.properties for API keys and other local configurations
             val localProperties = Properties()
             val localPropertiesFile = rootProject.file("local.properties")
             if (localPropertiesFile.exists()) {
-                localProperties.load(localPropertiesFile.inputStream())
+                FileInputStream(localPropertiesFile).use { input ->
+                    localProperties.load(input)
+                }
+                localProperties.forEach { key, value ->
+                    rootProject.extra.set(key as String, value)
+                }
             }
-            val geminiApiKey = localProperties.getProperty("GEMINI_API_KEY") ?: ""
+            enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
+            // ... rest of settings.gradle.kts ...
+            ```
+        3.  **`shared/build.gradle.kts`**: Apply the `buildConfig` plugin and configure `buildConfigField` to inject the API key.
+            ```kotlin
             plugins {
                 // ... other plugins ...
                 alias(libs.plugins.buildConfig)
@@ -357,9 +368,13 @@ actual fun getInMemoryDatabase(): AppDatabase {
             // ... other configurations ...
 
             buildConfig {
-                buildConfigField("String", "GEMINI_API_KEY", geminiApiKey)
+                // Configure buildConfig to generate BuildConfig.GEMINI_API_KEY
+                // Access the API key from rootProject.extra (loaded from local.properties)
+                buildConfigField("String", "GEMINI_API_KEY", ""${rootProject.extra["GEMINI_API_KEY"]}"")
                 packageName("org.example.project.shared") // Set your common module's package name
             }
+
+            // ... rest of shared/build.gradle.kts ...
             ```
     *   **Usage in Common Kotlin Code**: Access the API key via `BuildConfig.GEMINI_API_KEY`.
         ```kotlin
