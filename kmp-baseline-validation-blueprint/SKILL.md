@@ -1,54 +1,68 @@
 ---
 name: kmp-baseline-validation-blueprint
-description: Blueprint for generating and maintaining a kmp-baseline-validation-task plan focusing on app-specific behavior.
+description: The central source of truth for planning and tracking explicitly validated app-specific user journeys.
 ---
 
-# Blueprint Validation Skill
+# Skill: Validate User Journeys via kmp-baseline-validation-task/SKILL.md
 
-## When to use this skill
-- Use this when generating a validation plan for a project based on its kmp-baseline-guide-task.
-- This is helpful for ensuring features are explicitly tested.
+## Overview
+This skill provides the structure and instructions for generating and executing the `kmp-baseline-validation-task/SKILL.md` file, which tracks specific end-to-end user journeys defined by the project.
 
-## How to use it
-- Execute the instructions for the AI Assistant below to create `.skills/kmp-baseline-validation-task/SKILL.md`.
+## Materialization Instructions
+When placed in a new codebase and asked to create a `kmp-baseline-validation-task/SKILL.md`, create the file at `.skills/kmp-baseline-validation-task/SKILL.md`. Generate the document following this exact structure:
+
+## `kmp-baseline-validation-task/SKILL.md` Template
+
+```markdown
+---
+name: kmp-baseline-validation-task
+description: Tracks the validation of explicitly defined end-to-end user journeys in the application.
+---
+
+# User Journey Validation
+
+This document contains a rigorous, multi-layered testing plan tailored precisely to the actual end-to-end user journeys defined in `kmp-baseline-guide-task/SKILL.md`.
+
+## Execution Protocol
+1.  **Agent Validations**: The AI agent will first execute any programmatically verifiable tests, scripts, or inspection to confirm the behavior.
+2.  **User Validations**: The AI agent will then prompt the User to manually navigate the application UI to functionally experience the journey. 
+3.  **Bug Tracking**: If a journey fails validation, the AI agent must abort the validation process, update the appropriate phase in `kmp-baseline-guide-task` with a new `**Agent Action**: Fix bug [...]`, and resolve the issue before re-attempting validation.
 
 ---
 
-# Skill: App-Specific Project Validation
+## Journey 1: Core Navigation
+Goal: Verify that the main UI framework boots and navigation correctly routes between major app destinations.
 
-## Description
-This document provides instructions for generating and maintaining a `kmp-baseline-validation-task` file that focuses strictly on testing **app-specific behavior and core Domain UseCases**, rather than generic app tests (e.g., standard "test database migrations"). It ensures the validation plan directly mirrors the actual features and behavior outlined in the project's `kmp-baseline-guide-task`.
+- [ ] **Agent Validation**: Ensure that UI tests covering the 5 main buttons on the Home screen pass.
+- [ ] **User Validation**: Launch the app. Confirm the Home screen displays 5 buttons (Writers Room, Recording Studio, Editing Studio, Publishing Studio, Archives), and that tapping each correctly navigates to its respective empty screen with a functional 'Home' back button.
 
-## Materialization Instructions / Usage
-To materialize this skill in a new project, copy or generate the contents of this blueprint into a new file located at `.skills/kmp-baseline-validation-task/SKILL.md` within the user's project codebase. Then, prompt the AI to generate the validation plan based on it.
+## Journey 2: Writer's Room
+Goal: Verify that the user can generate, fine-tune, edit, and persist a script using Gemini.
 
----
+- [ ] **Agent Validation**: Ensure that API mock tests for Gemini are passing and the Room Database successfully persists `Script` entities with `Target Duration`.
+- [ ] **User Validation**: Navigate to the Writer's Room. Select a target duration (5s to 60s) using the slider. Click generate and ensure a valid script appears within 60 seconds. Edit a portion of the script text, tap 'Save', and verify it persists correctly. Confirm that saving automatically enables navigation to the Recording Studio.
 
-## Instructions for the AI Assistant
+## Journey 3: Recording Studio
+Goal: Verify that the user can record video using the front-facing camera while following the teleprompter.
 
-When the trigger prompt is received, please perform the following steps:
+- [ ] **Agent Validation**: Verify ViewModel logic accurately manages the 5-second countdown timer and synchronizes the active script with the teleprompter advancement.
+- [ ] **User Validation**: Navigate to the Recording Studio. Confirm the top half displays the previously saved script and the bottom half shows the live front-facing camera view (with touch events disabled). Tap the Start button. Wait for the 5-second countdown, and verify the teleprompter advances 3 lines at a time until the target duration is met. When recording completes, confirm that navigation to go back (to Writer's Room) and forward (to Editing Studio) works.
 
-### 1. Extract App-Specific Features
-Read the `.skills/kmp-baseline-guide-task/SKILL.md` file and identify the exact, concrete features the app will provide. Do not rely on generic development templates. Instead, ask: *What does this specific app do?* 
-For example: "Does the custom film-noir background image load?", "Can the user edit a script generated by Gemini?", "Does the teleprompter advance 3 lines at a time?"
+## Journey 4: Editing Studio
+Goal: Verify that the user can precisely define sections of the recorded video to trim and recover.
 
-### 2. Generate `kmp-baseline-validation-task`
-Create a file named `SKILL.md` in `.skills/kmp-baseline-validation-task/`. This document must contain a rigorous, multi-layered testing plan tailored *specifically* to the app behaviors and Domain UseCases you extracted from the `kmp-baseline-guide-task`.
+- [ ] **Agent Validation**: Verify that timeline scaling and metadata generation correctly load the local file path dynamically created in the Recording Studio.
+- [ ] **User Validation**: Navigate to the Editing Studio. Verify the video player controls. Mark specific sections of the video for removal. Select a 'Save' equivalent to persist the modified video natively, and select a 'Restore' equivalent to reconstruct the original footage. Confirm navigation logic to proceed to the Publishing Studio.
 
-### 3. Structure of `kmp-baseline-validation-task`
-Include standard YAML frontmatter for the skill.
-Divide tasks into clear `**Agent Action**` (automated tests targeting specific logic) and `**User Action**` (manual visual/functional tests of actual app behaviors). Group these by specific app features or by Phase.
+## Journey 5: Publishing Studio
+Goal: Verify that the user can seamlessly share the generated and edited video to external channels.
 
-#### Example Layout based on Features
-*   **Feature 1: Visual Theme & Assets** (e.g., Does the app load the specific background image?)
-*   **Feature 2: Core Navigation** (e.g., Do the specific buttons navigate to the specific screens?)
-*   **Feature 3: Domain Use Case A** (e.g., Writer's Room Gemini Integration)
-*   **Feature 4: Domain Use Case B** (e.g., Recording Studio Video & Teleprompter)
-*   **Feature 5: Domain Use Case C** (e.g., Editing Studio Trim & Restore)
-*   **Feature 6: External Integrations** (e.g., Publishing to YouTube)
+- [ ] **Agent Validation**: Ensure external share URI intents (on Android) and corresponding Activity View Controllers (on iOS) are properly structured and permissioned for external apps.
+- [ ] **User Validation**: Navigate to the Publishing Studio. Select the option to export the video. Confirm it successfully saves to the native Photo App or directly opens into YouTube Shorts if installed.
 
-### 4. Execution Protocol
-Once the `kmp-baseline-validation-task` is generated, the AI and User will work through it simultaneously with `kmp-baseline-guide-task`:
-1. **Agent Actions**: The AI will write targeted tests for specific business logic.
-2. **User Actions**: The AI will prompt the User to perform manual app-specific functionality testing. The User will report the results, and the AI will update the checklist.
-3. **Bug Tracking**: If an app-specific behavior fails during validation, the AI must add a new `[ ] **Agent Action**: Fix bug [...]` to the appropriate phase in `kmp-baseline-guide-task` and complete it before continuing validation.
+## Journey 6: Enhanced Editing and Polish (Phase 5)
+Goal: Verify Phase 5 precise controls, unskipped previews, and native trimming.
+
+- [ ] **Agent Validation**: Run tests validating the native video extraction logic, verifying tenth-of-a-second granularity constraints. 
+- [ ] **User Validation**: Within the Editing Studio, open the Fine-tune modal. Verify you can adjust playback blocks in tenth-of-a-second increments (0.0s to 0.9s). Tap "Preview without Skipped Frames"; confirm that playback accurately skips all marked sections seamlessly. Re-export the video and verify it natively handles the complex trimming natively outside of the test application framework. Ensure app branding shows as 'The Factory' with proper visual icons.
+```
