@@ -305,6 +305,11 @@ actual fun getInMemoryDatabase(): AppDatabase {
 #### Running Gradle Tasks (CRITICAL AI INSTRUCTION)
 *   **Rule**: **NEVER** use the raw shell command `run_shell_command("./gradlew ...")` to execute Gradle builds, tests, or syncs unless strictly necessary for a very specific low-level reason. It often hangs, loses buffer output, and causes daemon lockups. 
 *   **Solution**: **ALWAYS** use the dedicated IDE `gradle_build` tool (e.g. `gradle_build(commandLine = "assembleDebug")`) or `gradle_sync` tool. This integrates directly with the IDE's build system and provides clean, structured output and error reporting.
+*   **Build Optimization (Agent Action)**: When performing builds for rapid iteration during development:
+    1.  **Prioritize Android**: First, execute `gradle_build(commandLine = ":shared:assembleAndroid")`.
+    2.  **Report Android Status**: If the Android build succeeds, inform the user.
+    3.  **Optional iOS Build**: Only then, proceed to execute `gradle_build(commandLine = ":shared:linkReleaseFrameworkIosSimulatorArm64")`.
+    4.  **User Interrupt**: The user can interrupt the iOS build if they only need to verify Android changes.
 *   **KMP Android Instrumented Test Task**: The typical Gradle task for running Android Instrumented Tests in a KMP application module is `:androidApp:connectedDebugAndroidTest`. Avoid `:androidApp:androidTestDebug` as it may not be found.
 *   **KMP iOS Simulator Test Task**: The typical Gradle task for running iOS Simulator Tests in a KMP shared module is `:shared:iosSimulatorArm64Test`.
 
