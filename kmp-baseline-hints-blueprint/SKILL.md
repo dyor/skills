@@ -12,7 +12,7 @@ Detailed instructions and best practices for configuring and developing within t
 ### Materialization Instructions
 When applying this blueprint to a new project:
 1. Create a new directory in the project's root called `.skills/kmp-baseline-hints-task/`.
-2. Copy this blueprint's `SKILL.md` into `.skills/kmp-baseline-hints-task/SKILL.md`.
+2. Copy this blueprint's `SKILL.md` into `.skills/kmp-baseline-hints-task/SKILL.md` and ensure the `name` in the YAML frontmatter of the newly copied file is changed to `kmp-baseline-hints-task`.
 3. **CRITICAL**: You MUST copy the entire `examples/` directory from this blueprint's directory into the new `.skills/kmp-baseline-hints-task/` directory so that it sits alongside the new `SKILL.md`.
 
 - This re-usable skill will be used to create `kmp-baseline-hints-task/SKILL.md` within a user's codebase (in the /.skills directory in accordance with convention) that will be used to provide details where the agent typically makes mistakes and wastes time and tokens in getting KMP projects properly configured. 

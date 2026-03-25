@@ -55,7 +55,7 @@ Create or update `.skills/kmp-baseline-calculator-task/SKILL.md` with a comprehe
 ### Example Output Structure
 ```markdown
 ---
-name: kmp-baseline-calculator-blueprint
+name: kmp-baseline-calculator-task
 description: Tracks and calculates the overall completion percentage of the project based on the kmp-baseline-guide-task tasks.
 ---
 
