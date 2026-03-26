@@ -1,6 +1,6 @@
 ---
 name: kmp-baseline-hints-blueprint
-description: Provides the foundational architecture, best practices, and workarounds for a Kotlin Multiplatform (Android & iOS) project. Use when setting up or extending a KMP project using Compose, Room, Navigation 3, and native integrations.
+description: CRITICAL KMP knowledge base blueprint. Activate this skill WHENEVER encountering KMP build errors, Unresolved references (Navigation 3, Room, Ktor), MissingResourceException, iOS compilation/linkage failures, Compose Multiplatform UI quirks, or when implementing native hardware integrations (Camera, Audio, Video trimming, Permissions). Always consult before modifying build.gradle.kts or resolving stubborn KMP bugs.
 ---
 
 # KMP Baseline
@@ -303,10 +303,12 @@ actual fun getInMemoryDatabase(): AppDatabase {
 *   **Action**: If you see "new issues" after editing a file, STOP. Analyze the errors. Ensure you have the correct imports, that dependencies are declared in `build.gradle.kts`, and that you have performed a `gradle_sync` if you recently added new dependencies. Fix the code *before* attempting to build.
 
 #### Running Gradle Tasks (CRITICAL AI INSTRUCTION)
+*   **Rule**: **NEVER** use relative paths with the `write_file` tool for targets within the project structure. **ALWAYS** use absolute paths (e.g., `/Users/youruser/yourproject/module/file.kt`). Using relative paths can cause the IDE to incorrectly flag the write operation as "outside of this project," leading to unnecessary permission prompts and potential failures.
+*   **Solution**: When targeting a file within the project, prepend the known project root path (e.g., `/Users/mattdyor/kmpTemplate/Factory-12/`) to the relative file path.
 *   **Rule**: **NEVER** use the raw shell command `run_shell_command("./gradlew ...")` to execute Gradle builds, tests, or syncs unless strictly necessary for a very specific low-level reason. It often hangs, loses buffer output, and causes daemon lockups. 
 *   **Solution**: **ALWAYS** use the dedicated IDE `gradle_build` tool (e.g. `gradle_build(commandLine = "assembleDebug")`) or `gradle_sync` tool. This integrates directly with the IDE's build system and provides clean, structured output and error reporting.
 *   **Build Optimization (Agent Action)**: When performing builds for rapid iteration during development:
-    1.  **Prioritize Android**: First, execute `gradle_build(commandLine = ":shared:assembleAndroid")`.
+    1.  **Prioritize Android**: First, execute `gradle_build(commandLine = ":shared:assembleAndroidMain")`.
     2.  **Report Android Status**: If the Android build succeeds, inform the user.
     3.  **Optional iOS Build**: Only then, proceed to execute `gradle_build(commandLine = ":shared:linkReleaseFrameworkIosSimulatorArm64")`.
     4.  **User Interrupt**: The user can interrupt the iOS build if they only need to verify Android changes.
