@@ -1,6 +1,6 @@
-# JetSki Skills Repository
+# Skills Repository
 
-Welcome to the JetSki Skills Repository! This collection contains powerful skills and end-to-end task bundles designed to be imported directly into your local codebase. It empowers AI coding agents with codebase-specific instructions, blueprints, and capabilities.
+Welcome to the Skills Repository! This collection contains skills and "tasks" (tasks are a collection of skills designed to help get through a large chunk of work - like standing up a baseline KMP app, or migrating from an old library to a new one). These skills are hosted remotely (here) and intended to be imported into your codebase. 
 
 ## 1. Importing Standalone Skills
 
@@ -21,7 +21,7 @@ The agent will automatically pull down the repository code and unpack it into yo
 
 ## 2. Importing Project Tasks (Bundles)
 
-While standalone skills are singular tools, a **Task** is a complex bundle of interconnected skills, blueprints, guidelines, and agent tracking mechanisms that natively orchestrate massive, multi-phase projects (like initializing an entire mobile application codebase). 
+While standalone skills are singular and targetted, a **Task** is a complex bundle of interconnected reusable blueprints, that the agent can use to create codebase-specific task skills within your codebase. Typically a Task gets you from where you are (e.g., an old library version, an old language, an old framework) to where you want to be (e.g., a new library, a new language, a new framework). It can also be used to get from a template to a full-featured baseline app (e.g., the kmp-baseline skill).  
 
 The `import-skill` logic is sophisticated enough to detect when you are importing a task bundle based on the `/tasks/` URL structure.
 
@@ -40,6 +40,6 @@ When an end-user runs `import-skill` on your repository, the script automaticall
 This is where the **`update-importable-skill`** utility comes into play. 
 
 Before you `git push` a brand new skill (or a massive update) to your GitHub repository, you can prompt your agent to invoke this utility to standardize your files:
-> "Hey JetSki, run the update-importable-skill against my `journey-writing-skill`. Bump the `version` from 1.0.0 to 1.1.0, update the `description`, and add my name to the `author` field!"
+> "Run the update-importable-skill against my `journey-writing-skill`. Bump the `version` from 1.0.0 to 1.1.0 and update the `description` to match the revised functionality."
 
 The AI will safely parse the YAML `<--- --->` front-matter block at the top of your `SKILL.md` (or iterate across a massive array of files in a task bundle) and inject or bump the custom fields without disturbing your core markdown instructions. This guarantees your distributed tools will look great, behave cleanly, and be universally readable by any other AI agent working in an imported environment.

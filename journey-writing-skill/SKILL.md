@@ -1,6 +1,9 @@
 ---
 name: journey-writing-skill
 description: Use this skill when you need to test or validate app behavior, write an Android Studio Journey, automate UI testing, or define user flow validation requirements.
+version: 1.0.0
+author: dyor
+date_created: 2026-03-27
 ---
 
 ## Audience & Usage
