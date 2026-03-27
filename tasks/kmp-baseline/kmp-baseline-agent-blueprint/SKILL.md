@@ -182,5 +182,5 @@ To efficiently extend this codebase:
 * **CRITICAL**: Always begin your response with the current active Phase and Step (if present) from `kmp-baseline-guide-task` formatted exactly like either `[Phase X - Step Y]` or `[Phase X - Step Y.Z]` or `[Phase X]`. You determine the active phase and step by finding the first unchecked `- [ ]` task in `kmp-baseline-guide-task` and looking at its parent headers.
 
 ## Skills & Best Practices
-For more specific technical guidance (e.g., creating run configs, working with Room, Navigation, and complex Video Playback components like `AndroidView` and iOS Sandbox UUID resolution), heavily refer to the `.skills/kmp-baseline-hints-task/SKILL.md` (or `/Users/mattdyor/.skills/kmp-baseline-hints-blueprint/SKILL.md` templates). It contains vital workarounds for multiplatform video clipping and rendering.
+For more specific technical guidance (e.g., creating run configs, working with Room, Navigation, and complex Video Playback components like `AndroidView` and iOS Sandbox UUID resolution), heavily refer to the `.skills/kmp-baseline-hints-task/SKILL.md` (or `../kmp-baseline-hints-blueprint/SKILL.md` templates). It contains vital workarounds for multiplatform video clipping and rendering.
 ```
