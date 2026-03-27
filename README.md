@@ -1,6 +1,6 @@
 # Skills Repository
 
-Welcome to the Skills Repository! This collection contains skills and "tasks" (tasks are a collection of skills designed to help get through a large chunk of work - like standing up a baseline KMP app, or migrating from an old library to a new one). These skills are hosted remotely (here) and intended to be imported into your codebase. 
+Welcome to the Skills Repository! This collection contains skills and "tasks" (tasks are a collection of skills designed to help get through a large chunk of work - like standing up a baseline KMP app, or migrating from an old library to a new one). These skills are hosted remotely (here or some other github repo) and intended to be localized or imported into your codebase. 
 
 ## 1. Importing Standalone Skills
 
@@ -15,7 +15,7 @@ Once the `import-skill` is in your codebase, you can prompt your AI agent to dow
 
 **Example: Importing the Journey Writing Skill**
 Ask your agent:
-> "Hey JetSki, please import the skill located at `https://github.com/dyor/skills/tree/main/journey-writing-skill`."
+> "Please import the skill located at `https://github.com/dyor/skills/tree/main/journey-writing-skill`."
 
 The agent will automatically pull down the repository code and unpack it into your project exactly at `.skills/imported-skills/journey-writing-skill/`. Simultaneously, it generates a ledger at `.skills/IMPORTED-SKILLS.md` keeping track of the GitHub commit hash, URL, and timestamp so you always know exactly what version of a skill you downloaded!
 
