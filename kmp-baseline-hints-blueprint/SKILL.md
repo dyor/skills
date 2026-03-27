@@ -477,8 +477,14 @@ Working with Native Video (especially `VideoTrimmer` and `VideoPlayer`) requires
     *   **Problem**: You get "Can't play this video" or continuous video reloading when modifying state elsewhere on the screen.
     *   **Solution**: `AndroidView`'s `update = { ... }` block runs on *every single recomposition*. Do NOT put `videoView.setVideoURI()` inside the `update` block, otherwise the player resets from scratch repeatedly. Instead, leave the `update` block empty and use `LaunchedEffect(url)` and `LaunchedEffect(seekRequest)` to control the VideoView asynchronously.
 *   **iOS Sandbox UUID Mapping**:
-    *   **Problem**: Video trimmer fails with "requested URL was not found on this server" after rebuilding the iOS app.
-    *   **Solution**: The iOS App Sandbox UUID changes on every fresh build. If you store absolute file paths (e.g. to `Documents` or `tmp`), they become invalid. You MUST parse the filename and prepend the current `NSTemporaryDirectory()` or `NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, ...)` every time you resolve a path before playback or trimming.
+    *   **Problem**: Video trimmer or player fails with "requested URL was not found on this server" after rebuilding the iOS app.
+    *   **Solution**: The iOS App Sandbox UUID changes on every fresh build. If you store absolute file paths (e.g. to `Documents` or `tmp`), they become invalid. You MUST use a `resolveVideoPath` expect/actual function to dynamically prepend the *current* `NSTemporaryDirectory()` or `NSDocumentDirectory` to the filename every time you resolve a path before playback or trimming. Check `examples/VideoPathResolver.kt`.
+
+### Camera & Recording
+*   **Camera Integration (CameraK)**:
+    *   **Rule**: Use `io.github.kashif-mehmood-km:camerak` and `io.github.kashif-mehmood-km:video_recorder_plugin` for camera and video recording capabilities across Android and iOS. Do NOT use `AndroidView` or `UIKitView` directly for camera feeds, as `CameraK` handles the heavy lifting.
+    *   **Implementation**: Use `rememberCameraKState` and `CameraKScreen`.
+    *   **Video Recording Hook**: To actually record video, you MUST use `val videoPlugin = rememberVideoRecorderPlugin()`, attach it in `setupPlugins = { it.attachPlugin(videoPlugin) }`, and call `videoPlugin.startRecording()` / `videoPlugin.stopRecording()` explicitly. Check `examples/CameraRecordingSnippet.kt` for exact event handling logic to retrieve the `filePath`.
 *   **Android `MediaMuxer` Corrupt Output**:
     *   **Problem**: Trimming results in a corrupted MP4 file that throws "Can't play this video" in the Publishing Studio.
     *   **Solution**: Android's `MediaMuxer` requires *strictly monotonic* timestamps. When reading interleaved audio/video from `MediaExtractor`, timestamps can jitter backwards. Maintain a `val lastWrittenTimeUs = mutableMapOf<Int, Long>()` and only `writeSampleData` if `pts > lastPts`.

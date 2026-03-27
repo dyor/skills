@@ -97,7 +97,7 @@ Goal: Implement device-specific features (Camera, Audio, Location, etc.).
 - [ ] **Agent Action**: Run `git add . && git commit -m "Phase 3: Writer's Room complete"`.
 - [ ] **Agent Action**: Update progress tracking by executing `.skills/kmp-baseline-calculator-task/SKILL.md` to track Phase 3 progress.
 - [ ] **Agent Action**: Allow the user to navigate to the Recording Studio after they save a script.
-- [ ] **Agent Action**: For the Recording Studio, show a front-facing camera view with a start button on the bottom half of the screen, and on the top half of the screen show the active script. Implement `CameraPreview` as an `expect/actual` function. Ensure the `CameraPreview` is not consuming touch events by adding `Modifier.clickable(enabled = false, onClick = {})` to it.
+- [ ] **Agent Action**: For the Recording Studio, show a front-facing camera view with a start button on the bottom half of the screen, and on the top half of the screen show the active script. Use `CameraKScreen` from the `io.github.kashif-mehmood-km:camerak` library for a robust multiplatform camera implementation. Ensure the camera preview is not consuming touch events by adding `Modifier.clickable(enabled = false, onClick = {})` to it.
 - [ ] **Agent Action**: Implement `RecordingStudioViewModel` to manage a 5-second countdown and teleprompter logic that displays 3 lines at a time and advances them to finish the script in 60 seconds. The `RecordingStudioScreen` should observe the active script from the ViewModel.
 - [ ] **Agent Action**: When the recording is done, allow user to re-record. Also include navigation to go back (to Writer's Room) and forward (to Editing Studio).
 - [ ] **Validation**: Execute `.skills/kmp-baseline-validation-task/SKILL.md` to validate Journey 3: Recording Studio.
@@ -108,6 +108,10 @@ Goal: Implement device-specific features (Camera, Audio, Location, etc.).
 - [ ] **Validation**: Execute `.skills/kmp-baseline-validation-task/SKILL.md` to validate Journey 4: Editing Studio.
 - [ ] **Agent Action**: Run `git add . && git commit -m "Phase 3: Editing Studio complete"`.
 - [ ] **Agent Action**: Update progress tracking by executing `.skills/kmp-baseline-calculator-task/SKILL.md` to track Phase 3 progress.
+- [ ] **Agent Action**: Implement Active Script state management and dynamic Home screen navigation. Update the `Script` entity to store the `scriptState` (e.g. `WRITERS_ROOM`, `RECORDING_STUDIO`, etc.).
+- [ ] **Agent Action**: Implement archiving functionality for any script (marking `isActive` to false, `scriptState` to `ARCHIVES`).
+- [ ] **Agent Action**: Implement "Go Back" functionality to revert an active script to a previous stage dynamically.
+- [ ] **Validation**: Ensure Active Script state management, dynamic Home screen navigation, archiving, and stage reversion works on Android and iOS.
 ### Step 2.2: YouTube Integration
 - [ ] **Agent Action**: Provide an option to publish the video on YouTube shorts. It is ok to use simple shortcuts - like saving this video to the native Photo app and opening YouTube (where the user can upload the video from their native Photo app). 
 - [ ] **Validation**: Execute `.skills/kmp-baseline-validation-task/SKILL.md` to validate Journey 5: Publishing Studio.
