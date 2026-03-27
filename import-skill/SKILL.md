@@ -28,3 +28,9 @@ This skill fetches a remote skill (or collection) from a URL and installs it. Si
    python3 .skills/import-skill/scripts/import_skill.py --refresh
    ```
 2. This will read through `IMPORTED-SKILLS.md` and attempt to individually `--overwrite` the directories with their latest source commits.
+
+## ADDING THIS SKILL TO YOUR CODEBASE (Bootstrap)
+
+Since you need this skill in order to cleanly import *other* skills, you first have to bootstrap it into a new project manually. Provide this exact prompt to your AI Agent in the new codebase to install it natively:
+
+> Please bootstrap the 'import-skill' into this codebase. Download the SKILL.md from `https://raw.githubusercontent.com/dyor/skills/main/import-skill/SKILL.md` and save it directly to `.skills/import-skill/SKILL.md`. Then, download its required python script from `https://raw.githubusercontent.com/dyor/skills/main/import-skill/scripts/import_skill.py` and save it to `.skills/import-skill/scripts/import_skill.py`.
