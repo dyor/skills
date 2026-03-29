@@ -14,19 +14,19 @@ description: Blueprint outlining the initial prompt steps for setting up the man
 
 ---
 
-I want you to initialize this new KMP project by executing the blueprint skills defined in the `.skills/tasks/kmp-baseline/` directory to generate their corresponding codebase-speicfic files in the project's `.skills/` directory. 
+I want you to initialize this new KMP project by executing the blueprint skills defined in the `.skills/tasks/kmp-baseline/` directory to generate their corresponding codebase-specific files in the project's `.skills/tasks/kmp-baseline/` directory. 
 
 Please follow these exact steps sequentially. Do not start executing the actual development tasks yet; your goal is purely to generate the management and tracking files.
 
 1. **Read the Blueprint Skills:** 
    Read the following directories located in the `.skills/tasks/kmp-baseline/` folder (or adjacent to this prompt) to understand the templates available.
-   *CRITICAL RULE:* For any skill instantiated in the project's `.skills/` directory, if its corresponding blueprint directory contains an `examples/` folder (e.g., `../[blueprint-name]/examples/`), you MUST copy that entire `examples/` folder into the newly created local skill directory (e.g., `.skills/[local-skill-name]/examples/`).
+   *CRITICAL RULE:* For any skill instantiated in the project's `.skills/tasks/kmp-baseline/` directory, if its corresponding blueprint directory contains an `examples/` folder (e.g., `../[blueprint-name]/examples/`), you MUST copy that entire `examples/` folder into the newly created local skill directory (e.g., `.skills/tasks/kmp-baseline/[local-skill-name]/examples/`).
 
 2. **Generate the `kmp-baseline-hints-task`:**
-   Execute the instructions in `../kmp-baseline-hints-blueprint/SKILL.md` to create the codebase-specific `.skills/kmp-baseline-hints-task/SKILL.md` file, which will act as the baseline for architecture rules and library versions. Don't forget to copy the `examples/` folder if it exists.
+   Execute the instructions in `../kmp-baseline-hints-blueprint/SKILL.md` to create the codebase-specific `.skills/tasks/kmp-baseline/kmp-baseline-hints-task/SKILL.md` file, which will act as the baseline for architecture rules and library versions. Don't forget to copy the `examples/` folder if it exists.
 
 3. **Generate the `kmp-baseline-guide-task`:**
-   Execute the instructions in `../kmp-baseline-guide-blueprint/SKILL.md` to create the `.skills/kmp-baseline-guide-task/SKILL.md` file.
+   Execute the instructions in `../kmp-baseline-guide-blueprint/SKILL.md` to create the `.skills/tasks/kmp-baseline/kmp-baseline-guide-task/SKILL.md` file.
    *Here are the core details for the project you should use to populate the guide:*
    - **App Name:** Factory
    - **Target Audience:** KMP App Builders
@@ -37,12 +37,12 @@ Please follow these exact steps sequentially. Do not start executing the actual 
    **Validation** before moving on to step 4, ask the user verify the contents of `kmp-baseline-guide-task` and to say 'Proceed' when the review is complete. 
 
 4. **Generate the `kmp-baseline-validation-task`:**
-   Once `kmp-baseline-guide-task` is created, use the instructions in `../kmp-baseline-validation-blueprint/SKILL.md` to generate a `.skills/kmp-baseline-validation-task/SKILL.md` file. Tailor the multi-layered testing plan specifically to the phases and features you just outlined in the `kmp-baseline-guide-task`. Ask user for any information needed to create a robust validation plan. 
+   Once `kmp-baseline-guide-task` is created, use the instructions in `../kmp-baseline-validation-blueprint/SKILL.md` to generate a `.skills/tasks/kmp-baseline/kmp-baseline-validation-task/SKILL.md` file. Tailor the multi-layered testing plan specifically to the phases and features you just outlined in the `kmp-baseline-guide-task`. Ask user for any information needed to create a robust validation plan. 
 
 5. **Generate the `kmp-baseline-calculator-task`:**
-   Next, use the instructions in `../kmp-baseline-calculator-blueprint/SKILL.md` to parse the newly created `kmp-baseline-guide-task` and generate the initial `.skills/kmp-baseline-calculator-task/SKILL.md` file to give us our starting baseline progress report. As we work through the `kmp-baseline-guide-task`, we will periodically run the `kmp-baseline-calculator-task` to estimate how much of the work we have completed. 
+   Next, use the instructions in `../kmp-baseline-calculator-blueprint/SKILL.md` to parse the newly created `kmp-baseline-guide-task` and generate the initial `.skills/tasks/kmp-baseline/kmp-baseline-calculator-task/SKILL.md` file to give us our starting baseline progress report. As we work through the `kmp-baseline-guide-task`, we will periodically run the `kmp-baseline-calculator-task` to estimate how much of the work we have completed. 
 
 6. **Generate the `AGENTS.md`:**
    Finally, use the instructions in `../kmp-baseline-agent-blueprint/SKILL.md` to create or update an `AGENTS.md` file in the root directory that has agent instructions that prevent the agent from making mistakes. As we work with this project, we will continue to add more instructions to `AGENTS.md` to keep the agent working smoothly with this project.
 
-Once you have created all the files, let me know, and we will begin executing Phase 1 from the `kmp-baseline-guide-task`.
+Once you have created all the files in `.skills/tasks/kmp-baseline`, delete the blueprint folders (directories ending in `-blueprint`) from that directory, let me know, and we will begin executing Phase 1 from the `kmp-baseline-guide-task`.

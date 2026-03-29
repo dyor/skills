@@ -11,9 +11,9 @@ Detailed instructions and best practices for configuring and developing within t
 
 ### Materialization Instructions
 When applying this blueprint to a new project:
-1. Create a new directory in the project's root called `.skills/kmp-baseline-hints-task/`.
-2. Copy this blueprint's `SKILL.md` into `.skills/kmp-baseline-hints-task/SKILL.md` and ensure the `name` in the YAML frontmatter of the newly copied file is changed to `kmp-baseline-hints-task`.
-3. **CRITICAL**: You MUST copy the entire `examples/` directory from this blueprint's directory into the new `.skills/kmp-baseline-hints-task/` directory so that it sits alongside the new `SKILL.md`.
+1. Create a new directory in the project's root called `.skills/tasks/kmp-baseline/kmp-baseline-hints-task/`.
+2. Copy this blueprint's `SKILL.md` into `.skills/tasks/kmp-baseline/kmp-baseline-hints-task/SKILL.md` and ensure the `name` in the YAML frontmatter of the newly copied file is changed to `kmp-baseline-hints-task`.
+3. **CRITICAL**: You MUST copy the entire `examples/` directory from this blueprint's directory into the new `.skills/tasks/kmp-baseline/kmp-baseline-hints-task/` directory so that it sits alongside the new `SKILL.md`.
 
 - This re-usable skill will be used to create `kmp-baseline-hints-task/SKILL.md` within a user's codebase (in the /.skills directory in accordance with convention) that will be used to provide details where the agent typically makes mistakes and wastes time and tokens in getting KMP projects properly configured. 
 - Use this when initializing a new KMP project that requires Room, Compose Navigation 3, Koin, Material 3, Calf permissions, and native integrations (e.g., camera and microphone).
@@ -317,7 +317,7 @@ actual fun getInMemoryDatabase(): AppDatabase {
 
 #### Avoid Version Roulette (CRITICAL AI INSTRUCTION)
 *   **Rule**: Before randomly changing version numbers or regressing to previous library versions, **ALWAYS** follow these steps:
-    1.  **Check Existing Documentation**: Consult `.skills/kmp-baseline-hints-task/SKILL.md` and `AGENTS.md` for any forbidden or recommended versions.
+    1.  **Check Existing Documentation**: Consult `.skills/tasks/kmp-baseline/kmp-baseline-hints-task/SKILL.md` and `AGENTS.md` for any forbidden or recommended versions.
     2.  **Web Search & Official Docs**: Use `web_search` and `search_android_docs` to find official migration guides, known issues, or compatibility tables for the library in question.
     3.  **Prioritize Code Updates**: The error is most likely due to API changes in a newer library version. Focus on updating your code to match the new version's API, rather than downgrading the library.
     4.  **Diagnose Transitive Conflicts**: Use Gradle's `dependencyInsight` command to identify potential transitive dependency mismatches. For example, to diagnose Ktor issues for the iOS ARM64 compilation classpath:
@@ -446,6 +446,8 @@ actual fun getInMemoryDatabase(): AppDatabase {
     2. If that fails, go to **File -> Invalidate Caches... -> Check 'Clear file system cache and Local History' -> Invalidate and Restart**.
 
 #### iOS Build & Xcode Troubleshooting (CRITICAL)
+*   **Problem**: The `iosApp` run configuration target mysteriously disappears from the Android Studio run targets dropdown.
+*   **Solution**: This is a known IDE sync issue with the Kotlin Multiplatform plugin. The fix is to update the Kotlin Multiplatform plugin in Android Studio to the latest version and restart the IDE.
 *   **Problem**: You get vague Kotlin iOS linkage or compilation errors (e.g., `linkDebugFrameworkIosSimulatorArm64` fails, `Cannot infer a bundle ID`, etc.) and running Gradle commands or grepping errors doesn't give a clear reason.
 *   **Solution**: The issue is often native Xcode configuration, most commonly missing Provisioning Profiles or Team Signing. **Do not randomly execute gradle commands to diagnose iOS native errors.**
 *   **Steps to Fix**:
@@ -485,6 +487,7 @@ Working with Native Video (especially `VideoTrimmer` and `VideoPlayer`) requires
     *   **Rule**: Use `io.github.kashif-mehmood-km:camerak` and `io.github.kashif-mehmood-km:video_recorder_plugin` for camera and video recording capabilities across Android and iOS. Do NOT use `AndroidView` or `UIKitView` directly for camera feeds, as `CameraK` handles the heavy lifting.
     *   **Implementation**: Use `rememberCameraKState` and `CameraKScreen`.
     *   **Video Recording Hook**: To actually record video, you MUST use `val videoPlugin = rememberVideoRecorderPlugin()`, attach it in `setupPlugins = { it.attachPlugin(videoPlugin) }`, and call `videoPlugin.startRecording()` / `videoPlugin.stopRecording()` explicitly. Check `examples/CameraRecordingSnippet.kt` for exact event handling logic to retrieve the `filePath`.
+*   **Video Export & Publishing**: When saving generated videos to the native device gallery (e.g., for YouTube upload), use an `expect/actual` approach to interface with Android's `MediaStore` and iOS's `PHPhotoLibrary`. Check `examples/VideoPublisher.kt` for the exact implementations needed.
 *   **Android `MediaMuxer` Corrupt Output**:
     *   **Problem**: Trimming results in a corrupted MP4 file that throws "Can't play this video" in the Publishing Studio.
     *   **Solution**: Android's `MediaMuxer` requires *strictly monotonic* timestamps. When reading interleaved audio/video from `MediaExtractor`, timestamps can jitter backwards. Maintain a `val lastWrittenTimeUs = mutableMapOf<Int, Long>()` and only `writeSampleData` if `pts > lastPts`.

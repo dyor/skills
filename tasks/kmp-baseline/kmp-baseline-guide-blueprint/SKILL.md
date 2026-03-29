@@ -9,7 +9,7 @@ description: The central source of truth for planning, tracking progress, and or
 This re-usable skill provides the structure and instructions for an AI Agent to generate, maintain, and execute a `kmp-baseline-guide-task/SKILL.md` file specific to the user's codebase. The `kmp-baseline-guide-task/SKILL.md` is the central source of truth for planning, tracking progress, and orchestrating work between the AI Agent and the User in a codebase during a buildout of a baseline KMP project (e.g., adding baseline KMP cababilities to a KMP template).
 
 ## Materialization Instructions for Generating a New `kmp-baseline-guide-task`
-When placed in a new codebase and asked to create a `kmp-baseline-guide-task/SKILL.md`, create the file at `.skills/kmp-baseline-guide-task/SKILL.md`. Ask for details on the project requirements and generate the document following this exact structure:
+When placed in a new codebase and asked to create a `kmp-baseline-guide-task/SKILL.md`, create the file at `.skills/tasks/kmp-baseline/kmp-baseline-guide-task/SKILL.md`. Ask for details on the project requirements and generate the document following this exact structure:
 
 ### 1. Project Overview
 Define the high-level intent, core architecture, and stylistic guidelines of the project. When information is needed from the user, such as [App Name] or [Architecture]
@@ -23,7 +23,7 @@ Within each phase, define numbered steps with specific checklist items.
 Prefix each task with the responsible party to ensure clear separation of duties:
 *   `**User Action**:` For manual steps the human must take (e.g., running `git init`, testing on a physical device, adding visual assets, creating external accounts).
 *   `**Agent Action**:` For code generation, refactoring, build configuration, and file modifications the AI will perform.
-*   `**Validation**:` A reserved step explicitly triggering the execution of specific user journeys defined in `.skills/kmp-baseline-validation-task/SKILL.md`. This represents an important end-to-end journey that the agent and the user are going to confirm is working and track.
+*   `**Validation**:` A reserved step explicitly triggering the execution of specific user journeys defined in `.skills/tasks/kmp-baseline/kmp-baseline-validation-task/SKILL.md`. This represents an important end-to-end journey that the agent and the user are going to confirm is working and track.
 
 ### 4. Tracking State
 Use Markdown checkboxes as bulleted lists to track state, which ensures they render on separate lines. All new tasks should start as `- [ ]`. When completed, update the document to `- [x]`.
@@ -44,7 +44,7 @@ Core Architecture: [default=Kotlin Multiplatform (Android, iOS), Compose, Room, 
 Goal: Initialize the stack and establish core dependencies.
 
 ### Step 1: Project Setup
-- [ ] **Agent Action**: Update progress tracking by executing `.skills/kmp-baseline-calculator-task/SKILL.md` before starting to track baseline progress.
+- [ ] **Agent Action**: Update progress tracking by executing `.skills/tasks/kmp-baseline/kmp-baseline-calculator-task/SKILL.md` before starting to track baseline progress.
 - [ ] **User Action**: Change the Android Studio project view from "Android View" to "Project View" using the dropdown in the top-left of the Project tool window. This is required to see all KMP directories like `shared` and `iosApp`.
 - [ ] **User Action**: Run `git init`.
 - [ ] **Agent Action**: Purge extraneous targets. Remove `desktopApp`, `jvm`, `webApp`, `js`, and `wasmJs` references from `settings.gradle.kts` and the `kotlin { }` block in `shared/build.gradle.kts`. Delete their respective directories (`desktopApp/`, `webApp/`, `shared/src/jsMain/`, etc.). Clean up extraneous run configurations from `.idea/workspace.xml` and `.idea/runConfigurations/`. This project ONLY targets Android and iOS.
@@ -52,7 +52,7 @@ Goal: Initialize the stack and establish core dependencies.
 - [ ] **User Action**: Confirm that the project builds and runs on Android and iOS.
 - [ ] **Agent Action**: Run `git add . && git commit -m "Extraneous targets removed and iOS signing configured"`.
 - [ ] **Agent Action**: Configure `build.gradle.kts` with required dependencies (Room, Ktor, Koin, Coil, Compose Navigation 3, Calf permissions). Only do this AFTER targets have been purged.
-    *   **Note**: If facing `Unresolved reference 'androidx.savedstate:savedstate-compose-serialization'` during dependency resolution, ensure this dependency is *removed* from `libs.versions.toml` and `build.gradle.kts`. Navigation 3 in KMP handles `NavKey` serialization via `SavedStateConfiguration` and `kotlinx.serialization.modules` directly, as documented in `.skills/kmp-baseline-hints-task/SKILL.md`.
+    *   **Note**: If facing `Unresolved reference 'androidx.savedstate:savedstate-compose-serialization'` during dependency resolution, ensure this dependency is *removed* from `libs.versions.toml` and `build.gradle.kts`. Navigation 3 in KMP handles `NavKey` serialization via `SavedStateConfiguration` and `kotlinx.serialization.modules` directly, as documented in `.skills/tasks/kmp-baseline/kmp-baseline-hints-task/SKILL.md`.
 - [ ] **User Action**: Confirm that the project builds and runs on Android and iOS.
 - [ ] **Agent Action**: Run `git add . && git commit -m "Phase 1 started"`.
 - [ ] **User Action**: Add `film_noir.png` to codebase at `shared/src/commonMain/composeResources/drawable/film_noir.png`.
@@ -60,7 +60,7 @@ Goal: Initialize the stack and establish core dependencies.
 - [ ] **Agent Action**: Adjust application style and theme based on `film_noir.png` aesthetic. Ensure text legibility on dark backgrounds by explicitly setting `contentColor = MaterialTheme.colorScheme.onSurface` on Cards and other containers.
 - [ ] **User Action**: Confirm that the app builds and runs with the background image.
 - [ ] **Agent Action**: Run `git add . && git commit -m "Phase 1 complete"`.
-- [ ] **Agent Action**: Update progress tracking by executing `.skills/kmp-baseline-calculator-task/SKILL.md` to reflect Phase 1 completion.
+- [ ] **Agent Action**: Update progress tracking by executing `.skills/tasks/kmp-baseline/kmp-baseline-calculator-task/SKILL.md` to reflect Phase 1 completion.
 
 ## Phase 2: Core Features & Logic
 Goal: Implement the primary business logic, integrations (e.g., AI interop), and local database.
@@ -74,9 +74,9 @@ Goal: Implement the primary business logic, integrations (e.g., AI interop), and
 ### Step 2: Main User Interface
 - [ ] **Agent Action**: Implement Compose Navigation 3 with 6 navigation nodes: Home, Writers Room, Recording Studio, Editing Studio, Publishing Studio, and Archives.
 - [ ] **Agent Action**: Create core UI screens and ViewModels for each of these screens. Start by just having 5 buttons on the Home screen (one for each of the other pages) and then a Home button on the other screens. 
-- [ ] **Validation**: Execute `.skills/kmp-baseline-validation-task/SKILL.md` to validate Journey 1: Core Navigation.
+- [ ] **Validation**: Execute `.skills/tasks/kmp-baseline/kmp-baseline-validation-task/SKILL.md` to validate Journey 1: Core Navigation.
 - [ ] **Agent Action**: Run `git add . && git commit -m "Phase 2 complete: Core Navigation"`.
-- [ ] **Agent Action**: Update progress tracking by executing `.skills/kmp-baseline-calculator-task/SKILL.md` to reflect Phase 2 completion.
+- [ ] **Agent Action**: Update progress tracking by executing `.skills/tasks/kmp-baseline/kmp-baseline-calculator-task/SKILL.md` to reflect Phase 2 completion.
 
 ## Phase 3: Hardware / Native Integrations (Production)
 Goal: Implement device-specific features (Camera, Audio, Location, etc.).
@@ -93,30 +93,40 @@ Goal: Implement device-specific features (Camera, Audio, Location, etc.).
 - [ ] **Agent Action**: For the Writer's Room, implement a Gemini client using Ktor. Ensure you configure the `HttpTimeout` plugin (e.g., 60 seconds) to prevent socket timeouts during long LLM generations. Inject the API key securely (e.g., via Gradle property injection or `buildConfigField`) to prevent hardcoding. Include a default prompt of "Write a script for YouTube short that is designed to teach people how to create compelling YouTube shorts."
 - [ ] **Agent Action**: Present the script on the screen and allow the user to edit and save it in the local Room database.
 - [ ] **Agent Action**: Implement "Active Script" logic: Update `Script` entity with `isActive` field, add `clearActiveScript()` and `setActiveScript()` to `ScriptDao`, and modify `WritersRoomViewModel.saveScript()` to set the newly saved script as active.
-- [ ] **Validation**: Execute `.skills/kmp-baseline-validation-task/SKILL.md` to validate Journey 2: Writer's Room.
+- [ ] **Validation**: Execute `.skills/tasks/kmp-baseline/kmp-baseline-validation-task/SKILL.md` to validate Journey 2: Writer's Room.
 - [ ] **Agent Action**: Run `git add . && git commit -m "Phase 3: Writer's Room complete"`.
-- [ ] **Agent Action**: Update progress tracking by executing `.skills/kmp-baseline-calculator-task/SKILL.md` to track Phase 3 progress.
+- [ ] **Agent Action**: Update progress tracking by executing `.skills/tasks/kmp-baseline/kmp-baseline-calculator-task/SKILL.md` to track Phase 3 progress.
 - [ ] **Agent Action**: Allow the user to navigate to the Recording Studio after they save a script.
 - [ ] **Agent Action**: For the Recording Studio, show a front-facing camera view with a start button on the bottom half of the screen, and on the top half of the screen show the active script. Use `CameraKScreen` from the `io.github.kashif-mehmood-km:camerak` library for a robust multiplatform camera implementation. Ensure the camera preview is not consuming touch events by adding `Modifier.clickable(enabled = false, onClick = {})` to it.
 - [ ] **Agent Action**: Implement `RecordingStudioViewModel` to manage a 5-second countdown and teleprompter logic that displays 3 lines at a time and advances them to finish the script in 60 seconds. The `RecordingStudioScreen` should observe the active script from the ViewModel.
 - [ ] **Agent Action**: When the recording is done, allow user to re-record. Also include navigation to go back (to Writer's Room) and forward (to Editing Studio).
-- [ ] **Validation**: Execute `.skills/kmp-baseline-validation-task/SKILL.md` to validate Journey 3: Recording Studio.
+- [ ] **Validation**: Execute `.skills/tasks/kmp-baseline/kmp-baseline-validation-task/SKILL.md` to validate Journey 3: Recording Studio.
 - [ ] **Agent Action**: Run `git add . && git commit -m "Phase 3: Recording Studio complete"`.
-- [ ] **Agent Action**: Update progress tracking by executing `.skills/kmp-baseline-calculator-task/SKILL.md` to track Phase 3 progress.
+- [ ] **Agent Action**: Update progress tracking by executing `.skills/tasks/kmp-baseline/kmp-baseline-calculator-task/SKILL.md` to track Phase 3 progress.
 - [ ] **Agent Action**: For the Editing Studio, allow the user to mark sections of the video for removal (e.g., where there was white space or where they made a mistake). Include a Save button that stares the modified video and a Restore button that returns the original video.
 - [ ] **Agent Action**: Include navigation for returning to the Editing Studio and advancing to the Publishing room.
-- [ ] **Validation**: Execute `.skills/kmp-baseline-validation-task/SKILL.md` to validate Journey 4: Editing Studio.
+- [ ] **Validation**: Execute `.skills/tasks/kmp-baseline/kmp-baseline-validation-task/SKILL.md` to validate Journey 4: Editing Studio.
 - [ ] **Agent Action**: Run `git add . && git commit -m "Phase 3: Editing Studio complete"`.
-- [ ] **Agent Action**: Update progress tracking by executing `.skills/kmp-baseline-calculator-task/SKILL.md` to track Phase 3 progress.
+- [ ] **Agent Action**: Update progress tracking by executing `.skills/tasks/kmp-baseline/kmp-baseline-calculator-task/SKILL.md` to track Phase 3 progress.
 - [ ] **Agent Action**: Implement Active Script state management and dynamic Home screen navigation. Update the `Script` entity to store the `scriptState` (e.g. `WRITERS_ROOM`, `RECORDING_STUDIO`, etc.).
 - [ ] **Agent Action**: Implement archiving functionality for any script (marking `isActive` to false, `scriptState` to `ARCHIVES`).
 - [ ] **Agent Action**: Implement "Go Back" functionality to revert an active script to a previous stage dynamically.
+- [ ] **Agent Action**: Fix Editing Studio bug 1: Skipped blocks in the timeline should be bypassed during playback.
+- [ ] **Agent Action**: Fix Editing Studio bug 2: Replay logic. After the video finishes, clicking "Play" again should seek to 0 and restart playback.
+- [ ] **Agent Action**: Fix Editing Studio bug 3: Persist the timeline modifications. Save removed segments to the `Script` entity so they are preserved across navigation.
+- [ ] **Agent Action**: Fix Editing Studio bug 4: Fix "Go Back" navigation in Editing Studio to correctly navigate back to the Recording Studio instead of the Home screen.
+- [ ] **Agent Action**: Fix Editing Studio bug 5: UI Polish for bottom navigation buttons. Change text buttons to icons (⬅️ for Go Back, 🔽 for Archive) and format the forward action as "Publish ➡️".
+- [ ] **Agent Action**: Fix Editing Studio bug 6: Add an `AlertDialog` confirmation prompt when archiving a script.
+- [ ] **Agent Action**: Update Editing Studio timeline UI to show the active block with a border, allow tapping a block to seek to that frame, and use Long Press to mark for removal.
+- [ ] **Agent Action**: Update Editing Studio playback logic to show a red overlay on skipped frames instead of actually skipping them.
+- [ ] **Agent Action**: Implement `VideoPlayer` in the Publishing Studio that actively skips the removed frames during playback to provide a true preview.
+- [ ] **Agent Action**: Record Learnings regarding CameraK, iOS Audio, UI padding, and Navigation backstack management to guide and blueprint files.
 - [ ] **Validation**: Ensure Active Script state management, dynamic Home screen navigation, archiving, and stage reversion works on Android and iOS.
 ### Step 2.2: YouTube Integration
-- [ ] **Agent Action**: Provide an option to publish the video on YouTube shorts. It is ok to use simple shortcuts - like saving this video to the native Photo app and opening YouTube (where the user can upload the video from their native Photo app). 
-- [ ] **Validation**: Execute `.skills/kmp-baseline-validation-task/SKILL.md` to validate Journey 5: Publishing Studio.
+- [ ] **Agent Action**: Provide an option to publish the video on YouTube shorts. Implement `expect`/`actual` logic in a `VideoPublisher` class to handle exporting the recorded video to the native Photo Gallery (using Android's `MediaStore` and iOS's `PHPhotoLibrary`) and launching the native YouTube application via Intent/URL scheme. Refer to `.skills/tasks/kmp-baseline/kmp-baseline-hints-task/examples/VideoPublisher.kt` for the exact implementations.
+- [ ] **Validation**: Execute `.skills/tasks/kmp-baseline/kmp-baseline-validation-task/SKILL.md` to validate Journey 5: Publishing Studio.
 - [ ] **Agent Action**: Run `git add . && git commit -m "Phase 3: Publishing Studio complete"`.
-- [ ] **Agent Action**: Update progress tracking by executing `.skills/kmp-baseline-calculator-task/SKILL.md` to reflect Phase 3 completion.
+- [ ] **Agent Action**: Update progress tracking by executing `.skills/tasks/kmp-baseline/kmp-baseline-calculator-task/SKILL.md` to reflect Phase 3 completion.
 
 ## Phase 4: The Final Cut (Cleanup & Optimization)
 Goal: Polish, optimize, and prepare for production.
@@ -125,9 +135,9 @@ Goal: Polish, optimize, and prepare for production.
 - [ ] **Agent Action**: Enforce naming conventions and clean up resources.
 - [ ] **Agent Action**: Remove or minimize debug logging.
 - [ ] **User Action**: Final review of the application state.
-- [ ] **Validation**: Execute `.skills/kmp-baseline-validation-task/SKILL.md` to perform a full end-to-end regression validation.
+- [ ] **Validation**: Execute `.skills/tasks/kmp-baseline/kmp-baseline-validation-task/SKILL.md` to perform a full end-to-end regression validation.
 - [ ] **Agent Action**: Run `git add . && git commit -m "Phase 4: Final Cut"`.
-- [ ] **Agent Action**: Update progress tracking by executing `.skills/kmp-baseline-calculator-task/SKILL.md` to track Phase 4 completion.
+- [ ] **Agent Action**: Update progress tracking by executing `.skills/tasks/kmp-baseline/kmp-baseline-calculator-task/SKILL.md` to track Phase 4 completion.
 
 ## Phase 5: Factory-Specific Polish
 Goal: Refine the user experience with precise video editing, dynamic durations, and finalized branding.
@@ -142,9 +152,9 @@ Goal: Refine the user experience with precise video editing, dynamic durations, 
 - [ ] **Agent Action**: Standardize bottom navigation across all studio screens to have a consistent "Go Back" and "Go Home" row. Ensure correct back-stack popping logic.
 - [ ] **Agent Action**: Rebrand the app from "KotlinProject" to "The Factory" in Android (`strings.xml`) and iOS (`Info.plist`).
 - [ ] **Agent Action**: Update the iOS and Android app icons using the `film_noir.png` asset (e.g., using `sips` for macOS to generate `app-icon-1024.png`).
-- [ ] **Validation**: Execute `.skills/kmp-baseline-validation-task/SKILL.md` to validate Journey 6: Enhanced Editing and Polish.
+- [ ] **Validation**: Execute `.skills/tasks/kmp-baseline/kmp-baseline-validation-task/SKILL.md` to validate Journey 6: Enhanced Editing and Polish.
 - [ ] **Agent Action**: Run `git add . && git commit -m "Phase 5: Polish complete"`.
-- [ ] **Agent Action**: Update progress tracking by executing `.skills/kmp-baseline-calculator-task/SKILL.md` to reflect Phase 5 completion.
+- [ ] **Agent Action**: Update progress tracking by executing `.skills/tasks/kmp-baseline/kmp-baseline-calculator-task/SKILL.md` to reflect Phase 5 completion.
 ```
 
 ## Execution Protocol
@@ -163,8 +173,5 @@ When the User says "Execute" or "Continue with the guide":
     -   Validate the changes (e.g., run local unit tests or build commands if applicable).
     -   Update the guide file, changing the `- [ ]` to `- [x]` for the completed task.
     -   Move on to the next task or pause if the next task requires the User.
-4.  If the next task is a `**User Action**` or requires external `**Validation**`:
-    -   Stop execution.
-    -   Prompt the User with specific instructions on what they need to do manually.
-    -   Wait for the User to confirm completion before continuing.
-5.  Periodically, at the end of a session or after major milestones, run the instructions in `.skills/kmp-baseline-calculator-task/SKILL.md` to update the progress tracking and keep it up to date.
+4.  **STOP ON USER ACTIONS**: You must process the `kmp-baseline-guide-task` strictly sequentially. If the next unchecked item in the guide is a User Action, you MUST STOP execution, explicitly prompt the user to complete that action, and wait for their confirmation. Do NOT proceed to subsequent Agent Actions or Validations until the user confirms the step is done.
+5.  Periodically, at the end of a session or after major milestones, run the instructions in `.skills/tasks/kmp-baseline/kmp-baseline-calculator-task/SKILL.md` to update the progress tracking and keep it up to date.

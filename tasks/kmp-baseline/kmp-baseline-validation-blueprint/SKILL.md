@@ -9,7 +9,7 @@ description: The central source of truth for planning and tracking explicitly va
 This skill provides the structure and instructions for generating and executing the `kmp-baseline-validation-task/SKILL.md` file, which tracks specific end-to-end user journeys defined by the project.
 
 ## Materialization Instructions
-When placed in a new codebase and asked to create a `kmp-baseline-validation-task/SKILL.md`, create the file at `.skills/kmp-baseline-validation-task/SKILL.md`. Generate the document following this exact structure:
+When placed in a new codebase and asked to create a `kmp-baseline-validation-task/SKILL.md`, create the file at `.skills/tasks/kmp-baseline/kmp-baseline-validation-task/SKILL.md`. Generate the document following this exact structure:
 
 ## `kmp-baseline-validation-task/SKILL.md` Template
 

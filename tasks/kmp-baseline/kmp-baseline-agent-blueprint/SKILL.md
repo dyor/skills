@@ -177,10 +177,11 @@ To efficiently extend this codebase:
 *   **Responsive UI:** Use `Box(contentAlignment = Alignment.Center)` with `widthIn(max = 600.dp)` for main content to support broader screens if needed.
 
 ## Prompting
-* When I say "Execute", that means that I have validated the work and I am ready for you to continue with `.skills/kmp-baseline-guide-task/SKILL.md`.
-* Ensure that the `kmp-baseline-guide-task` periodically invokes `.skills/kmp-baseline-calculator-task/SKILL.md` to determine how complete the project is.
+* When I say "Execute", that means that I have validated the work and I am ready for you to continue with `.skills/tasks/kmp-baseline/kmp-baseline-guide-task/SKILL.md`.
+* Ensure that the `kmp-baseline-guide-task` periodically invokes `.skills/tasks/kmp-baseline/kmp-baseline-calculator-task/SKILL.md` to determine how complete the project is.
 * **CRITICAL**: Always begin your response with the current active Phase and Step (if present) from `kmp-baseline-guide-task` formatted exactly like either `[Phase X - Step Y]` or `[Phase X - Step Y.Z]` or `[Phase X]`. You determine the active phase and step by finding the first unchecked `- [ ]` task in `kmp-baseline-guide-task` and looking at its parent headers.
+* **STOP ON USER ACTIONS**: You must process the `kmp-baseline-guide-task` strictly sequentially. If the next unchecked item in the guide is a User Action, you MUST STOP execution, explicitly prompt the user to complete that action, and wait for their confirmation. Do NOT proceed to subsequent Agent Actions or Validations until the user confirms the step is done.
 
 ## Skills & Best Practices
-For more specific technical guidance (e.g., creating run configs, working with Room, Navigation, and complex Video Playback components like `AndroidView` and iOS Sandbox UUID resolution), heavily refer to the `.skills/kmp-baseline-hints-task/SKILL.md` (or `../kmp-baseline-hints-blueprint/SKILL.md` templates). It contains vital workarounds for multiplatform video clipping and rendering.
+For more specific technical guidance (e.g., creating run configs, working with Room, Navigation, and complex Video Playback components like `AndroidView` and iOS Sandbox UUID resolution), heavily refer to the `.skills/tasks/kmp-baseline/kmp-baseline-hints-task/SKILL.md` (or `../kmp-baseline-hints-blueprint/SKILL.md` templates). It contains vital workarounds for multiplatform video clipping and rendering.
 ```
