@@ -9,7 +9,9 @@ description: The central source of truth for planning, tracking progress, and or
 This re-usable skill provides the structure and instructions for an AI Agent to generate, maintain, and execute a `kmp-baseline-guide-task/SKILL.md` file specific to the user's codebase. The `kmp-baseline-guide-task/SKILL.md` is the central source of truth for planning, tracking progress, and orchestrating work between the AI Agent and the User in a codebase during a buildout of a baseline KMP project (e.g., adding baseline KMP cababilities to a KMP template).
 
 ## Materialization Instructions for Generating a New `kmp-baseline-guide-task`
-When placed in a new codebase and asked to create a `kmp-baseline-guide-task/SKILL.md`, create the file at `.skills/tasks/kmp-baseline/kmp-baseline-guide-task/SKILL.md`. Ask for details on the project requirements and generate the document following this exact structure:
+When placed in a new codebase and asked to create a `kmp-baseline-guide-task/SKILL.md`, create the file at `.skills/tasks/kmp-baseline/kmp-baseline-guide-task/SKILL.md`. Ask for details on the project requirements and generate the document following this exact structure.
+
+Also, copy the contents of the blueprint's `resources/` folder to the materialized task's `resources/` folder to make assets available to the task runner (this is done automatically during materialization by the agent).
 
 ### 1. Project Overview
 Define the high-level intent, core architecture, and stylistic guidelines of the project. When information is needed from the user, such as [App Name] or [Architecture]
@@ -55,7 +57,7 @@ Goal: Initialize the stack and establish core dependencies.
     *   **Note**: If facing `Unresolved reference 'androidx.savedstate:savedstate-compose-serialization'` during dependency resolution, ensure this dependency is *removed* from `libs.versions.toml` and `build.gradle.kts`. Navigation 3 in KMP handles `NavKey` serialization via `SavedStateConfiguration` and `kotlinx.serialization.modules` directly, as documented in `.skills/tasks/kmp-baseline/kmp-baseline-hints-task/SKILL.md`.
 - [ ] **User Action**: Confirm that the project builds and runs on Android and iOS.
 - [ ] **Agent Action**: Run `git add . && git commit -m "Phase 1 started"`.
-- [ ] **User Action**: Add `film_noir.png` to codebase at `shared/src/commonMain/composeResources/drawable/film_noir.png`.
+- [ ] **Agent Action**: Copy `film_noir.png` from `.skills/tasks/kmp-baseline/kmp-baseline-guide-task/resources/film_noir.png` to `shared/src/commonMain/composeResources/drawable/film_noir.png` to verify resource loading. (If the task directory doesn't have it, retrieve it from the blueprint's `resources`).
 - [ ] **Agent Action**: Set `film_noir.png` as background image in `App.kt` immediately to verify resource loading.
 - [ ] **Agent Action**: Adjust application style and theme based on `film_noir.png` aesthetic. Ensure text legibility on dark backgrounds by explicitly setting `contentColor = MaterialTheme.colorScheme.onSurface` on Cards and other containers.
 - [ ] **User Action**: Confirm that the app builds and runs with the background image.
@@ -74,7 +76,6 @@ Goal: Implement the primary business logic, integrations (e.g., AI interop), and
 ### Step 2: Main User Interface
 - [ ] **Agent Action**: Implement Compose Navigation 3 with 6 navigation nodes: Home, Writers Room, Recording Studio, Editing Studio, Publishing Studio, and Archives.
 - [ ] **Agent Action**: Create core UI screens and ViewModels for each of these screens. Start by just having 5 buttons on the Home screen (one for each of the other pages) and then a Home button on the other screens. 
-- [ ] **Validation**: Execute `.skills/tasks/kmp-baseline/kmp-baseline-validation-task/SKILL.md` to validate Journey 1: Core Navigation.
 - [ ] **Agent Action**: Run `git add . && git commit -m "Phase 2 complete: Core Navigation"`.
 - [ ] **Agent Action**: Update progress tracking by executing `.skills/tasks/kmp-baseline/kmp-baseline-calculator-task/SKILL.md` to reflect Phase 2 completion.
 
@@ -90,7 +91,8 @@ Goal: Implement device-specific features (Camera, Audio, Location, etc.).
 - [ ] **Agent Action**: Implement `expect`/`actual` when needed for native capabilities.
 - [ ] **Agent Action**: Ensure network permissions and Ktor engines are configured. Specifically, verify `<uses-permission android:name="android.permission.INTERNET" />` is in `AndroidManifest.xml` and Ktor platform engines (`ktor-client-okhttp` for Android, `ktor-client-darwin` for iOS) are added to respective source sets in `build.gradle.kts`.
 - [ ] **User Action**: Add `GEMINI_API_KEY=your_api_key_here` to `local.properties` to keep it out of version control.
-- [ ] **Agent Action**: For the Writer's Room, implement a Gemini client using Ktor. Ensure you configure the `HttpTimeout` plugin (e.g., 60 seconds) to prevent socket timeouts during long LLM generations. Inject the API key securely (e.g., via Gradle property injection or `buildConfigField`) to prevent hardcoding. Include a default prompt of "Write a script for YouTube short that is designed to teach people how to create compelling YouTube shorts."
+- [ ] **Agent Action**: Implement a Target Duration slider (5s to 60s) in the Writer's Room and update the Gemini prompt to strictly adhere to the selected duration. Update `Script` entity to store this duration.
+- [ ] **Agent Action**: For the Writer's Room, implement a Gemini client using Ktor. Ensure you configure the `HttpTimeout` plugin (e.g., 60 seconds) to prevent socket timeouts during long LLM generations. Inject the API key securely (e.g., via Gradle property injection or `buildConfigField`) to prevent hardcoding. Include a default prompt that explicitly commands: "Write a script for a YouTube short that takes exactly {targetDuration} seconds to read aloud. ONLY return the text to be spoken and the timestamp range it is spoken in, using the strict format `0s-5s: Hello...`. Do not include any conversational filler, markdown formatting, explanations, or background info. These timestamps will directly control how long the caption remains on screen."
 - [ ] **Agent Action**: Present the script on the screen and allow the user to edit and save it in the local Room database.
 - [ ] **Agent Action**: Implement "Active Script" logic: Update `Script` entity with `isActive` field, add `clearActiveScript()` and `setActiveScript()` to `ScriptDao`, and modify `WritersRoomViewModel.saveScript()` to set the newly saved script as active.
 - [ ] **Validation**: Execute `.skills/tasks/kmp-baseline/kmp-baseline-validation-task/SKILL.md` to validate Journey 2: Writer's Room.
@@ -98,31 +100,29 @@ Goal: Implement device-specific features (Camera, Audio, Location, etc.).
 - [ ] **Agent Action**: Update progress tracking by executing `.skills/tasks/kmp-baseline/kmp-baseline-calculator-task/SKILL.md` to track Phase 3 progress.
 - [ ] **Agent Action**: Allow the user to navigate to the Recording Studio after they save a script.
 - [ ] **Agent Action**: For the Recording Studio, show a front-facing camera view with a start button on the bottom half of the screen, and on the top half of the screen show the active script. Use `CameraKScreen` from the `io.github.kashif-mehmood-km:camerak` library for a robust multiplatform camera implementation. Ensure the camera preview is not consuming touch events by adding `Modifier.clickable(enabled = false, onClick = {})` to it.
-- [ ] **Agent Action**: Implement `RecordingStudioViewModel` to manage a 5-second countdown and teleprompter logic that displays 3 lines at a time and advances them to finish the script in 60 seconds. The `RecordingStudioScreen` should observe the active script from the ViewModel.
+- [ ] **Agent Action**: Implement `RecordingStudioViewModel` to parse the `0s-5s:` timestamps from the generated script. The teleprompter must advance based strictly on these parsed durations (e.g., showing a caption for exactly 5 seconds if marked `0s-5s`). Include a 5-second initial countdown. During recording, display two counters: one showing time remaining for the current caption, and one showing time remaining for the entire video. The `RecordingStudioScreen` should observe the active script from the ViewModel.
 - [ ] **Agent Action**: When the recording is done, allow user to re-record. Also include navigation to go back (to Writer's Room) and forward (to Editing Studio).
 - [ ] **Validation**: Execute `.skills/tasks/kmp-baseline/kmp-baseline-validation-task/SKILL.md` to validate Journey 3: Recording Studio.
 - [ ] **Agent Action**: Run `git add . && git commit -m "Phase 3: Recording Studio complete"`.
 - [ ] **Agent Action**: Update progress tracking by executing `.skills/tasks/kmp-baseline/kmp-baseline-calculator-task/SKILL.md` to track Phase 3 progress.
-- [ ] **Agent Action**: For the Editing Studio, allow the user to mark sections of the video for removal (e.g., where there was white space or where they made a mistake). Include a Save button that stares the modified video and a Restore button that returns the original video.
+- [ ] **Agent Action**: For the Editing Studio, allow the user to mark sections of the video for removal. Implement visual indicators on the timeline so skipped frames show a red overlay instead of actually skipping them during standard playback. Include a Save button that explicitly triggers the `VideoTrimmer` to reconstruct the original footage without the red sections, and a Restore button.
+- [ ] **Agent Action**: Upgrade the VideoPlayer to support precise seeking (`seekRequest`) and playback state (`isPlaying`) across Android (`VideoView`) and iOS (`AVPlayerViewController`). Add `onTimeUpdate` and `onCompletion` callbacks.
+- [ ] **Agent Action**: Implement `resolveVideoPath` expect/actual to handle iOS Simulator UUID changes across rebuilds (searching `NSDocumentDirectory` and `NSTemporaryDirectory`).
+- [ ] **Agent Action**: Refactor the Editing Studio timeline to dynamically generate exactly one block per second of the recorded video using `MediaMetadataRetriever` (Android) and `AVURLAsset` (iOS) to fetch the actual video duration.
+- [ ] **Agent Action**: Implement a "Fine-tune" modal in the Editing Studio allowing tenth-of-a-second skipping granularity (0.0s to 0.9s). Ensure it overlays cleanly at the bottom, auto-pauses the video when open, and seeks directly to the tapped tenth.
+- [ ] **Agent Action**: Add a "Preview without Skipped Frames" button that instantly seeks to the first unskipped tenth of a second and plays through, auto-skipping removed segments and reverting state upon completion.
+- [ ] **Agent Action**: Implement native `VideoTrimmer` (expect/actual) using Android `MediaExtractor`/`MediaMuxer` and iOS `AVMutableComposition` to trim and stitch unskipped tenths of a second into a final `_trimmed.mp4` file without heavy re-encoding. Ensure video rotation/transform metadata is preserved.
 - [ ] **Agent Action**: Include navigation for returning to the Editing Studio and advancing to the Publishing room.
-- [ ] **Validation**: Execute `.skills/tasks/kmp-baseline/kmp-baseline-validation-task/SKILL.md` to validate Journey 4: Editing Studio.
 - [ ] **Agent Action**: Run `git add . && git commit -m "Phase 3: Editing Studio complete"`.
 - [ ] **Agent Action**: Update progress tracking by executing `.skills/tasks/kmp-baseline/kmp-baseline-calculator-task/SKILL.md` to track Phase 3 progress.
 - [ ] **Agent Action**: Implement Active Script state management and dynamic Home screen navigation. Update the `Script` entity to store the `scriptState` (e.g. `WRITERS_ROOM`, `RECORDING_STUDIO`, etc.).
 - [ ] **Agent Action**: Implement archiving functionality for any script (marking `isActive` to false, `scriptState` to `ARCHIVES`).
 - [ ] **Agent Action**: Implement "Go Back" functionality to revert an active script to a previous stage dynamically.
-- [ ] **Agent Action**: Fix Editing Studio bug 1: Skipped blocks in the timeline should be bypassed during playback.
-- [ ] **Agent Action**: Fix Editing Studio bug 2: Replay logic. After the video finishes, clicking "Play" again should seek to 0 and restart playback.
-- [ ] **Agent Action**: Fix Editing Studio bug 3: Persist the timeline modifications. Save removed segments to the `Script` entity so they are preserved across navigation.
-- [ ] **Agent Action**: Fix Editing Studio bug 4: Fix "Go Back" navigation in Editing Studio to correctly navigate back to the Recording Studio instead of the Home screen.
-- [ ] **Agent Action**: Fix Editing Studio bug 5: UI Polish for bottom navigation buttons. Change text buttons to icons (⬅️ for Go Back, 🔽 for Archive) and format the forward action as "Publish ➡️".
-- [ ] **Agent Action**: Fix Editing Studio bug 6: Add an `AlertDialog` confirmation prompt when archiving a script.
-- [ ] **Agent Action**: Update Editing Studio timeline UI to show the active block with a border, allow tapping a block to seek to that frame, and use Long Press to mark for removal.
-- [ ] **Agent Action**: Update Editing Studio playback logic to show a red overlay on skipped frames instead of actually skipping them.
-- [ ] **Agent Action**: Implement `VideoPlayer` in the Publishing Studio that actively skips the removed frames during playback to provide a true preview.
-- [ ] **Agent Action**: Record Learnings regarding CameraK, iOS Audio, UI padding, and Navigation backstack management to guide and blueprint files.
-- [ ] **Validation**: Ensure Active Script state management, dynamic Home screen navigation, archiving, and stage reversion works on Android and iOS.
+- [ ] **Agent Action**: Standardize bottom navigation across all studio screens to have a consistent "Go Back" and "Go Home" row. Ensure correct back-stack popping logic.
+- [ ] **Agent Action**: Create an Archives screen that lists all of the archived videos and allows a user to make an archived video active so that they can work on it some more.
+- [ ] **Validation**: Execute `.skills/tasks/kmp-baseline/kmp-baseline-validation-task/SKILL.md` to validate Journey 6: Archives.
 ### Step 2.2: YouTube Integration
+- [ ] **Agent Action**: In the Publishing Studio, display a `VideoPlayer` that acts as a final preview of the trimmed video (where the skipped/red frames from the Editing Studio are physically removed).
 - [ ] **Agent Action**: Provide an option to publish the video on YouTube shorts. Implement `expect`/`actual` logic in a `VideoPublisher` class to handle exporting the recorded video to the native Photo Gallery (using Android's `MediaStore` and iOS's `PHPhotoLibrary`) and launching the native YouTube application via Intent/URL scheme. Refer to `.skills/tasks/kmp-baseline/kmp-baseline-hints-task/examples/VideoPublisher.kt` for the exact implementations.
 - [ ] **Validation**: Execute `.skills/tasks/kmp-baseline/kmp-baseline-validation-task/SKILL.md` to validate Journey 5: Publishing Studio.
 - [ ] **Agent Action**: Run `git add . && git commit -m "Phase 3: Publishing Studio complete"`.
@@ -152,7 +152,7 @@ Goal: Refine the user experience with precise video editing, dynamic durations, 
 - [ ] **Agent Action**: Standardize bottom navigation across all studio screens to have a consistent "Go Back" and "Go Home" row. Ensure correct back-stack popping logic.
 - [ ] **Agent Action**: Rebrand the app from "KotlinProject" to "The Factory" in Android (`strings.xml`) and iOS (`Info.plist`).
 - [ ] **Agent Action**: Update the iOS and Android app icons using the `film_noir.png` asset (e.g., using `sips` for macOS to generate `app-icon-1024.png`).
-- [ ] **Validation**: Execute `.skills/tasks/kmp-baseline/kmp-baseline-validation-task/SKILL.md` to validate Journey 6: Enhanced Editing and Polish.
+- [ ] **Validation**: Execute `.skills/tasks/kmp-baseline/kmp-baseline-validation-task/SKILL.md` to validate Journey 4: Editing Studio.
 - [ ] **Agent Action**: Run `git add . && git commit -m "Phase 5: Polish complete"`.
 - [ ] **Agent Action**: Update progress tracking by executing `.skills/tasks/kmp-baseline/kmp-baseline-calculator-task/SKILL.md` to reflect Phase 5 completion.
 ```
