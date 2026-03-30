@@ -5,7 +5,7 @@ description: Tracks the validation of explicitly defined end-to-end user journey
 
 # User Journey Validation
 
-This document contains a rigorous, multi-layered testing plan tailored precisely to the actual end-state functionality of the application. Journeys represent the final shipping product, not intermediate development milestones or phases.
+This document contains a rigorous, multi-layered testing plan tailored precisely to the actual end-state functionality of the application. Journeys represent the final shipping product, not intermediate development steps (e.g., validating a navigation graph with empty placeholder screens).
 
 ## Execution Protocol
 1.  **Agent Validations**: The AI agent will first execute any programmatically verifiable tests, scripts, or inspection to confirm the behavior.
@@ -49,12 +49,3 @@ Goal: Verify that users can see past projects and restore an archived project to
 
 - [ ] **Agent Validation**: Ensure that the database query for the Archives correctly fetches scripts where `scriptState == 'ARCHIVES'` or `isActive == false` and populates a list.
 - [ ] **User Validation**: Navigate to the Archives screen from the Home Screen. Confirm that previously archived videos (or scripts) appear in a list. Tap on an archived video, select a "Restore" or "Make Active" option, and verify you are immediately routed to the Home Screen or appropriate studio, and the project is now the Active Project.
-
----
-
-## Notes for Blueprint
-*   **Philosophy Shift**: Validation tasks must focus exclusively on end-state functionality representing the final shipping product, not intermediate development steps (e.g., "Phase 1: Core Navigation" with empty screens). 
-*   **Journey 1 (Home Screen)**: Focus on thematic consistency (background images, readable text contrast, non-default colors) and dynamic state routing (Active project routing vs. "Start New Video"). Remove intermediate placeholder UI tests. Ensure "Archives" is always accessible.
-*   **Writer's Room**: Added strict formatting validation requirements for the LLM output. The script must ONLY contain teleprompter words and timestamps (e.g., "0s-5s: Hello..."), stripping conversational filler or background context.
-*   **Editing Studio**: Collapsed "Phase 5 (Polish)" requirements into the core Editing Studio journey. The validation must explicitly check for 0.1s granularity seeking, visual indicators of skipped segments (red blocks), the "Preview without Skipped Frames" feature, and accurate native trimming logic.
-*   **Archives**: Explicitly added an Archives journey to ensure the user can see past projects and restore an archived project to active status.
