@@ -483,8 +483,11 @@ Working with Native Video (especially `VideoTrimmer` and `VideoPlayer`) requires
     *   **Solution**: The iOS App Sandbox UUID changes on every fresh build. If you store absolute file paths (e.g. to `Documents` or `tmp`), they become invalid. You MUST use a `resolveVideoPath` expect/actual function to dynamically prepend the *current* `NSTemporaryDirectory()` or `NSDocumentDirectory` to the filename every time you resolve a path before playback or trimming. Check `examples/VideoPathResolver.kt`.
 
 ### Camera & Recording
+*   **Compose vs Native Recording (CRITICAL for iOS Audio)**:
+    *   **Problem**: Audio syncing issues, missing audio tracks, or crashes when attempting to record video via Compose Multiplatform camera wrappers (like early CameraK) on iOS.
+    *   **Solution**: Do NOT rely on Compose Multiplatform abstractions for robust Video+Audio recording. You must implement a completely Native `UIKitView` wrapper (e.g., `AVCaptureSession`, `AVCaptureMovieFileOutput`) in `iosMain`, and an `AndroidView` wrapper (e.g., CameraX `VideoCapture`) in `androidMain`. Check `examples/NativeCameraView.kt` implementations if available.
 *   **Camera Integration (CameraK)**:
-    *   **Rule**: Use `io.github.kashif-mehmood-km:camerak` and `io.github.kashif-mehmood-km:video_recorder_plugin` for camera and video recording capabilities across Android and iOS. Do NOT use `AndroidView` or `UIKitView` directly for camera feeds, as `CameraK` handles the heavy lifting.
+    *   **Rule**: Use `io.github.kashif-mehmood-km:camerak` and `io.github.kashif-mehmood-km:video_recorder_plugin` ONLY for basic camera feeds. For actual video + audio recording, refer to the "Compose vs Native Recording" rule above.
     *   **Implementation**: Use `rememberCameraKState` and `CameraKScreen`.
     *   **Video Recording Hook**: To actually record video, you MUST use `val videoPlugin = rememberVideoRecorderPlugin()`, attach it in `setupPlugins = { it.attachPlugin(videoPlugin) }`, and call `videoPlugin.startRecording()` / `videoPlugin.stopRecording()` explicitly. Check `examples/CameraRecordingSnippet.kt` for exact event handling logic to retrieve the `filePath`.
 *   **Video Export & Publishing**: When saving generated videos to the native device gallery (e.g., for YouTube upload), use an `expect/actual` approach to interface with Android's `MediaStore` and iOS's `PHPhotoLibrary`. Check `examples/VideoPublisher.kt` for the exact implementations needed.
@@ -494,6 +497,9 @@ Working with Native Video (especially `VideoTrimmer` and `VideoPlayer`) requires
 *   **iOS `AVAssetExportSession` Silent Failures**:
     *   **Problem**: Native iOS trimming completes instantly but returns `false` or fails.
     *   **Solution**: Do NOT use `AVAssetExportPresetHighestQuality` if stitching segmented slices, as slight encoding differences cause failures. Always use `AVAssetExportPresetPassthrough` to slice and copy frames without re-encoding.
+*   **iOS CoreAnimation Video Captions (`CATextLayer` clipping & centering)**:
+    *   **Problem**: Captions rendered onto an iOS video via `AVMutableVideoComposition` and `CATextLayer` are clipped on the edges or not vertically centered (too much space at the bottom).
+    *   **Solution**: `CATextLayer` draws text top-down from its bounding box. To prevent clipping, you must calculate the exact text width and height based on font size and string length, and explicitly constrain it to `renderWidth - padding`. To achieve vertical centering with a background, do NOT use `CATextLayer`'s background color directly. Instead, create a parent `CALayer` (container) with the background color and rounded corners, calculate the exact text height, set the container's height to `textHeight + verticalPadding`, and position the `CATextLayer` at `y = (containerHeight - textHeight) / 2`.
 *   **Async Seek Debouncing**:
     *   **Problem**: The UI jumps back and forth infinitely when seeking the video via state updates.
     *   **Solution**: `seekToTime` on iOS and `seekTo` on Android are asynchronous. The video's time observer loop will continue to fire old timestamps *after* you request a seek. Add a `delay(200)` inside the `LaunchedEffect(seekRequest)` right after the native seek command to debounce the old callbacks before you listen to `onTimeUpdate` again.
