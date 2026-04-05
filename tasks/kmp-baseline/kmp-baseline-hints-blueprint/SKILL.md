@@ -315,6 +315,19 @@ actual fun getInMemoryDatabase(): AppDatabase {
 *   **KMP Android Instrumented Test Task**: The typical Gradle task for running Android Instrumented Tests in a KMP application module is `:androidApp:connectedDebugAndroidTest`. Avoid `:androidApp:androidTestDebug` as it may not be found.
 *   **KMP iOS Simulator Test Task**: The typical Gradle task for running iOS Simulator Tests in a KMP shared module is `:shared:iosSimulatorArm64Test`.
 
+#### Journey Testing via Android Studio Gutter Icons (CRITICAL)
+*   **Problem**: When you click the Run (play) gutter icon next to a `.journey.xml` file, Android Studio creates a Run Configuration setting the `JOURNEYS_FILTER` environment variable, but the Gradle test runner ends up executing *all* journeys (or the wrong one).
+*   **Reason**: Gradle spawns an isolated child JVM process to execute tests, and custom environment variables from the host terminal or IDE are NOT automatically inherited by that test process.
+*   **Solution**: You must explicitly configure Gradle to pass the `JOURNEYS_FILTER` property down into the test environment. Add this block to `androidApp/build.gradle.kts`:
+    ```kotlin
+    tasks.withType<Test>().configureEach {
+        val filter = System.getenv("JOURNEYS_FILTER") ?: project.findProperty("JOURNEYS_FILTER") as String?
+        if (filter != null) {
+            environment("JOURNEYS_FILTER", filter)
+        }
+    }
+    ```
+
 #### Avoid Version Roulette (CRITICAL AI INSTRUCTION)
 *   **Rule**: Before randomly changing version numbers or regressing to previous library versions, **ALWAYS** follow these steps:
     1.  **Check Existing Documentation**: Consult `.skills/tasks/kmp-baseline/kmp-baseline-hints-task/SKILL.md` and `AGENTS.md` for any forbidden or recommended versions.

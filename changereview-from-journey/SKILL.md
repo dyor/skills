@@ -15,12 +15,13 @@ When a user invokes you with **"run changereview on <journey_name>"** or a simil
 4. Navigate into the target `<device-id>/<journey_name>/` folder. Verify that files like `journey_results.pb` and `displayStateX.png` exist. If there are multiple device folders, pick the one that contains the `<journey_name>` files.
 
 ## Step 2: Setup Persistent Output Directory
-1. Execute a shell command to create a persistent directory for this specific journey:
-   `mkdir -p .changereview/<journey_name>`
+1. Execute a shell command to create a persistent directory and images subfolder for this specific journey:
+   `mkdir -p .changereview/<journey_name>/images`
 
-## Step 3: Copy Assets
-1. Execute a shell command to copy all `.png` screenshots from the ephemeral build folder into the persistent folder:
-   `cp <source_device_journey_path>/*.png .changereview/<journey_name>/`
+## Step 3: Copy and Resize Assets
+1. Execute the dedicated bash script to copy all `.png` screenshots from the ephemeral build folder into the persistent folder, resizing them to exactly 200 pixels wide while maintaining their aspect ratio.
+2. Run the following shell command, replacing the placeholders with the actual paths:
+   `bash .skills/changereview-from-journey/scripts/copy_and_resize_images.sh <source_device_journey_path> .changereview/<journey_name>/images 200`
 
 ## Step 4: Extract Reasoning and Actions
 1. Execute a shell command to extract readable text from the protobuf results file:
@@ -29,10 +30,15 @@ When a user invokes you with **"run changereview on <journey_name>"** or a simil
 
 ## Step 5: Generate the Change Review Report
 1. Synthesize the parsed text and the copied images into a highly readable Markdown document.
-2. Use the `write_file` tool to save the report to: `.changereview/<journey_name>-changereview.md`
-3. Structure the Markdown as follows:
+2. Determine the overall Pass/Fail status by evaluating the result states of the steps (if any step resulted in "Failed" or "Could not successfully complete", the overall status is **FAIL**. Otherwise, it is **PASS**).
+3. Retrieve the current date and time (e.g. by running the `date` shell command).
+4. Use the `write_file` tool to save the report to: `.changereview/<journey_name>/changereview.md`
+5. Structure the Markdown exactly as follows:
    * Document Title: `# <Journey Name> Change Review`
-   * Metadata: Journey File, Device Tested.
+   * Metadata & Status (Prominently displayed right under the title as a bulleted list to prevent markdown line-collapsing):
+     * `* **Date/Time:** <Current Date and Time>`
+     * `* **Overall Status:** **[PASS]** (or **[FAIL]**)`
+     * `* **Device Tested:** <Device ID>`
    * A sequential breakdown of every step attempted. For each step, include:
      * **Step Action/Goal**
      * **Result** (e.g., Goal Complete / Failed)
@@ -41,8 +47,16 @@ When a user invokes you with **"run changereview on <journey_name>"** or a simil
      * **Verification Statement**
      * **Screenshot**: Embed the corresponding screenshot that was copied in Step 3. 
        * **CRITICAL**: Use the absolute path so Android Studio renders it correctly.
-       * **CRITICAL**: Wrap the image in a link to itself so the user can pop it out. Constrain the width so it isn't massive.
-       * *Format*: `[<img src="file://<absolute_project_path>/.changereview/<journey_name>/displayStateX.png" width="150" />](file://<absolute_project_path>/.changereview/<journey_name>/displayStateX.png)`
+       * **CRITICAL**: Do NOT use a table format for the output document as standard Markdown tables cannot enforce column widths in all parsers, leading to squished images. Use standard Markdown headers and paragraphs.
+       * *Format*:
+         ```markdown
+         ### Step 1
+         **Goal:** ...
+         **Result:** ...
+         
+         [<img src="file://<absolute_project_path>/.changereview/<journey_name>/images/displayStateX.png" width="200" />](file://<absolute_project_path>/.changereview/<journey_name>/images/displayStateX.png)
+         ---
+         ```
 
 ## Step 6: Notify User
-1. Notify the user that the `<journey_name>-changereview.md` document has been generated successfully and is ready for inspection.
+1. Notify the user that the `.changereview/<journey_name>/changereview.md` document has been generated successfully and is ready for inspection.

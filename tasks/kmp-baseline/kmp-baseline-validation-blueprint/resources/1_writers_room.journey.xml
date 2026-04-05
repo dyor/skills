@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<journey name="Writer's Room">
+    <description>Verify that the user can generate, fine-tune, edit, and persist a strictly formatted script.</description>
+    <actions xml:space="preserve">
+        <action>Tap 'Start New Video' or 'Continue' to navigate to the Writer's Room.</action>
+        <action>Keep the slider at the default 15 second duration.</action>
+        <action>Enter "Teach people to do pushups" in the prompt idea box.</action>
+        <action>Tap 'Generate Script' and wait for the generated script to appear on screen - this should only be done once and may take 20 seconds.</action>
+        <action>Check that the generated text contains duration timestamps like '0s-5s' without conversational filler.</action>
+        <action>Edit a portion of the generated script text.</action>
+        <action>Tap 'Record' to go to the recording studio.</action>
+        </actions>
+</journey>
