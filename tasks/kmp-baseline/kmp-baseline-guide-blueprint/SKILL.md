@@ -46,15 +46,17 @@ Core Architecture: Kotlin Multiplatform (Android, iOS), Compose, Room, Compose N
 Goal: Initialize the stack, clean targets, and establish core dependencies and theming.
 
 ### Step 1: Project Setup & Cleanup
-- [ ] **Agent Action**: Purge extraneous targets (Only keep Android and iOS).
+- [ ] **Agent Action**: If this is already a KMP project, remove all targets except **Android** and **iOS** to establish a focused mobile baseline.
+- [ ] **Agent Action**: If this is a standard Android project, migrate it to a **Kotlin Multiplatform (KMP)** project supporting both Android and iOS. Refer to https://github.com/Kotlin/kmp-wizard for the recommended modern (AGP 9) structure.
 - [ ] **User Action**: Configure iOS signing in Xcode.
 - [ ] **User Action**: Confirm that the project builds and runs on Android and iOS.
 
 ### Step 2: Theming System (No Hardcoded Values)
 - [ ] **Agent Action**: Setup Material 3 theming. Create `Theme.kt`, `Color.kt`, and a `Spacing` system (e.g., via `CompositionLocal`) in `shared/src/commonMain/kotlin/.../ui/theme`. Ensure no hardcoded colors or padding values are used in UI components; all must reference the theme or spacing system.
 
-### Step 3: Dependencies
+### Step 3: Dependencies & Permissions
 - [ ] **Agent Action**: Configure `build.gradle.kts` with Room, Ktor, Compose Navigation 3, Calf permissions, and Gemini dependencies.
+- [ ] **Agent Action**: Add `<uses-permission android:name="android.permission.INTERNET" />` to `androidApp/src/main/AndroidManifest.xml` to enable network access.
 - [ ] **User Action**: Confirm that the project builds and runs.
 
 ## Phase 2: Baseline Validation (The Joke App)
