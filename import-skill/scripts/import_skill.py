@@ -105,8 +105,12 @@ def download_raw(url: str, dest_dir: Path, name: str, base_skills_dir: Path, ove
 
     dest_file = dest_dir / filename
     try:
+        import ssl
         req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-        with urllib.request.urlopen(req) as response, open(dest_file, 'wb') as out_file:
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        with urllib.request.urlopen(req, context=ctx) as response, open(dest_file, 'wb') as out_file:
             shutil.copyfileobj(response, out_file)
         print(f"Successfully saved to {dest_file}")
 

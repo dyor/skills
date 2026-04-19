@@ -4,7 +4,20 @@ description: Use this skill when you need to test or validate app behavior, writ
 version: 1.0.0
 author: dyor
 date_created: 2026-03-27
+import_commit: raw
+import_date: 2026-04-19
+import_url: https://github.com/dyor/skills/tree/main/journey-writing-skill
 ---
+
+## Overview: The TDD Agentic Journey Flow
+
+This skill forms **Step 1** of the Test-Driven Development (TDD) workflow for large codebase tasks (like migrating an app).
+
+1. **Onset (Journey Writing):** At the beginning of a large batch of work, run this `journey-writing-skill`. Use `feature_specification.md` (or similar spec documentation) to determine candidate Journeys. You must capture all significant user-facing functionality (Critical User Journeys or CUJs) in `.journey.xml` files. 
+2. **Verification:** Depending on the migration mode (Guided vs. Autonomous), the generated journey tests are either verified by the developer upfront, or accepted autonomously by the agent.
+3. **Execution & Repair:** When a phase of work involving user-facing functionality is complete, the agent runs the particular journey test associated with that phase.
+   * **If the journey fails:** The agent must attempt to repair the *application code* (not the test itself). If after multiple tries the code cannot be adjusted to make the journey pass, the agent must *stop work* (breaking out of any continuous loop) and ask for manual user intervention.
+   * **If the journey passes:** The agent executes the `generate-journey-report` skill to generate a clean, business-level markdown report with screenshots to provide the developer with verifiable proof of progress.
 
 ## Audience & Usage
 
@@ -14,15 +27,16 @@ date_created: 2026-03-27
 ## File Specification
 
 Journeys must be saved as artifacts within the Android Studio project structure using the following convention:
-*   **Path:** [Android Studio Project]/[module]/src/journeysTest/[journey_name].journey.xml
+*   **Path:** `[Android Studio Project]/[module]/src/journeysTest/[order_number]_[journey_name].journey.xml` (e.g., `01_onboarding.journey.xml`)
 *   **Format:** Strict XML syntax.
+*   **Ordering:** Always prepend a two-digit order number mapping directly to the phase or feature number in the `feature_specification.md`. This ensures deterministic execution for end-to-end runs where state dependencies exist (e.g., testing the profile dashboard requires a travel to be logged first).
 
 ### XML Syntax Structure
 
-*   <journey>: The root element. Must include a name attribute providing a human-readable identifier.
-*   <description>: (Optional but recommended) A short summary of the user experience.
-*   <actions>: A container for the steps.
-*   <action>: A natural language description of a discrete step (action and/or assertion) the user performs or expects.
+*   `<journey>`: The root element. Must include a name attribute providing a human-readable identifier.
+*   `<description>`: (Optional but recommended) A short summary of the user experience.
+*   `<actions>`: A container for the steps.
+*   `<action>`: A natural language description of a discrete step (action and/or assertion) the user performs or expects.
 
 ### Template
 
@@ -63,18 +77,27 @@ To create **effective** Journeys, follow these rules:
 
 1. **Assume App is Foregrounded:** Do not write "Launch the app" as the first step. The Journey runner handles this automatically.
 2. **Use Unambiguous Language:**
-    *   _Bad:_ "Select the button."
-    *   _Good:_ "Tap 'Dismiss'." or "Type 'celery' in the search bar."
+    *   *Bad:* "Select the button."
+    *   *Good:* "Tap 'Dismiss'." or "Type 'celery' in the search bar."
 3. **Combine Action and Assertion:** Include the success criteria within the step to clarify when an action is complete.
-    *   _Bad:_ "Select the send button."
-    *   _Good:_ "Send the email by tapping the submit button. This should close the email and return you to the inbox."
+    *   *Bad:* "Select the send button."
+    *   *Good:* "Send the email by tapping the submit button. This should close the email and return you to the inbox."
 4. **Maintain Granularity:** Break complex interactions into multiple specific steps to avoid timeout errors (Error: Could not successfully complete the action in max allowed attempt).
+5. **Use Feature Specifications as Sources:** Use `feature_specification.md` to identify candidate Journeys—typically one Journey should be created for each phase or major work element. Not all phases warrant journeys (e.g., data/networking), but any phase with a UI component needs a journey to test its key user flows.
 
 ## Troubleshooting: Enabling Android Instrumented Test Suite
 
-When encountering the error "There is no test suite configured in your 'androidApp' module's Gradle build file" while attempting to run Journeys or Android Instrumented Tests, perform the following steps to configure `androidApp/build.gradle.kts`:
+When encountering the error "There is no test suite configured in your module's Gradle build file" while attempting to run Journeys or Android Instrumented Tests, perform the following steps to configure `[module]/build.gradle.kts` (e.g., `app/build.gradle.kts` or `androidApp/build.gradle.kts`):
 
-1.  **Set `testInstrumentationRunner`**: Inside the `android { defaultConfig { ... } }` block, ensure `testInstrumentationRunner` is set:
+1.  **Enable Experimental Test Suite Support**: Open your project's `gradle.properties` file and ensure the following flag is present. This is **required** to use the `suites` block in AGP, otherwise you will encounter `Unresolved reference 'suites'`, `Unresolved reference 'useJunitEngine'`, and similar compilation errors:
+    ```properties
+    # Opt in to AGP test suite support.
+    android.experimental.testSuiteSupport=true
+    ```
+
+2.  **Ensure Compatible AGP Version**: The test suite support typically requires a recent version of the Android Gradle Plugin (e.g., AGP 9.0.0+). If you encounter unresolved references after adding the flag, ensure your AGP version in `gradle/libs.versions.toml` or your project-level build file is up to date (e.g., `agp = "9.0.0"`). If upgrading AGP, you may also need to upgrade Kotlin and dependent plugins (like KSP or Room) to compatible versions.
+
+3.  **Set `testInstrumentationRunner`**: Inside the `android { defaultConfig { ... } }` block, ensure `testInstrumentationRunner` is set:
     ```gradle
     defaultConfig {
         // ...
@@ -82,7 +105,7 @@ When encountering the error "There is no test suite configured in your 'androidA
     }
     ```
 
-2.  **Configure `testOptions` with `packaging` and Test Suites**: Update the `testOptions` block to handle packaging of native libraries and explicitly define the `journeysTest` suite:
+4.  **Configure `testOptions` with `packaging` and Test Suites**: Update the `testOptions` block to handle packaging of native libraries and explicitly define the `journeysTest` suite:
     ```gradle
     android {
         // ...
@@ -114,7 +137,7 @@ When encountering the error "There is no test suite configured in your 'androidA
     }
     ```
 
-3.  **Add `androidTestImplementation` Dependencies and Test Engines in TOML**: Ensure the necessary testing libraries are included in your top-level `dependencies { ... }` block in `androidApp/build.gradle.kts`:
+5.  **Add `androidTestImplementation` Dependencies and Test Engines in TOML**: Ensure the necessary testing libraries are included in your top-level `dependencies { ... }` block in your module's `build.gradle.kts`:
     ```gradle
     dependencies {
         // ... other dependencies ...
@@ -137,17 +160,17 @@ When encountering the error "There is no test suite configured in your 'androidA
     journeys-junit-engine = { group = "com.android.tools.journeys", name = "journeys-junit-engine", version.ref = "journeysJunitEngine" }
     ```
 
-4.  **Perform Gradle Sync**: After making these changes, always run a Gradle sync to apply the new configurations.
+6.  **Perform Gradle Sync**: After making these changes, always run a Gradle sync to apply the new configurations.
 
 ### Important Note on IDE Sync Issues
-If you have correctly configured the `androidApp/build.gradle.kts` file (as verified by a successful `./gradlew :androidApp:assembleDebugAndroidTest` build) and the "There is no test suite configured" message persists in the Journey Editor, this is likely an IDE caching bug. **You can still execute the journeys manually via the terminal:**
+If you have correctly configured your module's `build.gradle.kts` file (as verified by a successful `./gradlew :[module]:assembleDebugAndroidTest` build) and the "There is no test suite configured" message persists in the Journey Editor, this is likely an IDE caching bug. **You can still execute the journeys manually via the terminal:**
 ```bash
-./gradlew :androidApp:connectedDebugAndroidTest
+./gradlew :[module]:connectedDebugAndroidTest
 ```
 
 ## Example
 
-**File:** app/src/journeysTest/calendar_dentist_event.journey.xml
+**File:** `app/src/journeysTest/calendar_dentist_event.journey.xml`
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
