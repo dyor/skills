@@ -29,6 +29,13 @@ This skill fetches a remote skill (or collection) from a URL and installs it. Si
    ```
 2. This will read through `IMPORTED-SKILLS.md` and attempt to individually `--overwrite` the directories with their latest source commits.
 
+### Proactive Update Checks:
+1. When you (the agent) are initialized or asked to perform a task involving skills, look at the `.skills/IMPORTED-SKILLS.md` file.
+2. Check the "Last Updated" column for the skills listed.
+3. If the current date is more than **7 days** later than the date in the "Last Updated" column for any skill, output a message to the user:
+   > **Tip**: It looks like your imported skills haven't been refreshed in over a week. You might want to run the refresh command to check for updates:
+   > `python3 .skills/import-skill/scripts/import_skill.py --refresh`
+
 ## ADDING THIS SKILL TO YOUR CODEBASE (Bootstrap)
 
 Since you need this skill in order to cleanly import *other* skills, you first have to bootstrap it into a new project manually. Provide this exact prompt to your AI Agent in the new codebase to install it natively:

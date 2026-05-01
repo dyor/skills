@@ -4,8 +4,8 @@ description: Use this skill when you need to test or validate app behavior, writ
 version: 1.0.0
 author: dyor
 date_created: 2026-03-27
-import_commit: raw
-import_date: 2026-04-19
+import_commit: 87ef0d7a10afcc447de9de8454fecd4577738abc
+import_date: 2026-04-25 15:38:10
 import_url: https://github.com/dyor/skills/tree/main/journey-writing-skill
 ---
 
@@ -13,11 +13,11 @@ import_url: https://github.com/dyor/skills/tree/main/journey-writing-skill
 
 This skill forms **Step 1** of the Test-Driven Development (TDD) workflow for large codebase tasks (like migrating an app).
 
-1. **Onset (Journey Writing):** At the beginning of a large batch of work, run this `journey-writing-skill`. Use `feature_specification.md` (or similar spec documentation) to determine candidate Journeys. You must capture all significant user-facing functionality (Critical User Journeys or CUJs) in `.journey.xml` files. 
+1. **Onset (Journey Writing):** At the beginning of a large batch of work (such as migrating from iOS to Android), run this `journey-writing-skill`. You must look at `.migration/import/feature_specification.md` (or similar spec documentation) to determine candidate Journeys. You should add journey tests at the end of each *user-facing phase*. Note: You do not need to create journey tests for pure setup phases (e.g., setting up databases and libraries), but as soon as there is user-facing functionality, a journey test must be created and linked to that phase.
 2. **Verification:** Depending on the migration mode (Guided vs. Autonomous), the generated journey tests are either verified by the developer upfront, or accepted autonomously by the agent.
-3. **Execution & Repair:** When a phase of work involving user-facing functionality is complete, the agent runs the particular journey test associated with that phase.
-   * **If the journey fails:** The agent must attempt to repair the *application code* (not the test itself). If after multiple tries the code cannot be adjusted to make the journey pass, the agent must *stop work* (breaking out of any continuous loop) and ask for manual user intervention.
-   * **If the journey passes:** The agent executes the `generate-journey-report` skill to generate a clean, business-level markdown report with screenshots to provide the developer with verifiable proof of progress.
+3. **Execution & Repair:** When a user-facing phase of work is complete, the agent runs the particular journey test associated with that phase.
+   * **If the journey fails:** The agent MUST attempt to repair the *application code* (not the test itself) with at least one retry. If after multiple tries (e.g., 2-3 attempts) the code cannot be adjusted to make the journey pass, the agent must *stop work* (breaking out of any continuous loop) and report the issue to the user for manual intervention.
+   * **If the journey passes:** The agent executes the `generate-journey-report` skill to generate a clean, business-level markdown report. In the case where the agent fails the first time and then passes on a subsequent retry, the report will feature a "Before and After" view showcasing the fix.
 
 ## Audience & Usage
 
