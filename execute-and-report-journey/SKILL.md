@@ -1,8 +1,11 @@
 ---
 name: execute-and-report-journey
 description: Executes a Journey test, validates UI, captures screenshots, and maintains a live Markdown report of its progress with Before/After image comparisons.
-version: 1.0.0
+version: 1.0.1
 author: dyor
+import_commit: af60f004d289c9611894328e0099b4956e7b1efe
+import_date: 2026-05-02 08:18:11
+import_url: https://github.com/dyor/skills/tree/main/execute-and-report-journey
 ---
 
 # `execute-and-report-journey` Skill

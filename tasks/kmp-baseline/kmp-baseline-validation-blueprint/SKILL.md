@@ -39,7 +39,7 @@ Actions:
 Description: Verify that the user can record video using the front-facing camera while following the teleprompter.
 Actions:
 - [ ] Tap the "Writer's Room" button.
-- [ ] Type the following EXACTLY into the Generated Script Content text box: "0s-5s: Master the perfect push-up right now!\n5s-15s: Hands shoulder-width, body straight from head to heels. Engage your core."
+- [ ] Type the following EXACTLY into the Generated Script Content text box: "0s-5s: Perfect the perfect push-up right now!\n5s-15s: Hands shoulder-width, body straight from head to heels. Engage your core."
 - [ ] Tap the "Record" button to proceed to the Recording Studio.
 - [ ] Check that the bottom half of the screen shows the live front-facing camera view.
 - [ ] Tap the wide button labeled 'Start' on the right side of the bottom navigation bar to begin recording.
