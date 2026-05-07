@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<journey name="Editing Studio">
+    <description>Verify that the user can precisely define sections of the recorded video to trim and recover.</description>
+    <actions xml:space="preserve">
+        <action>Tap the "Writer's Room" button.</action>
+        <action>Type the following EXACTLY into the Generated Script Content text box: "0s-5s: Master the perfect push-up right now!\n
+5s-15s: Hands shoulder-width, body straight from head to heels. Engage your core."</action>
+        <action>Tap the "Record" button to proceed to the Recording Studio.</action>
+        <action>Check that the bottom half of the screen shows the live front-facing camera view.</action>
+        <action>Tap the wide button labeled 'Start' on the right side of the bottom navigation bar to begin recording.</action>
+        <action>Wait for the 5-second countdown to finish.</action>
+        <action>Wait for 20 seconds while the teleprompter recording finishes.</action>
+            <action>Verify that the teleprompter advances correctly based on the target duration timestamps and finishes at about 19 seconds (given the 2-second buffer after each segment).</action>
+            <action>When recording completes, verify that navigation option 'Edit' appears.</action>
+        <action>Tap 'Edit' to advance to the next screen.</action>
+        <action>Verify that the screen title is now "Editing Studio".</action>
+<!--        above is copied from recoding studio -->
+        <action>Verify that the timeline of seconds blocks roughly matches the length of the recorded video - approximately 19 seconds.</action>
+        <action>Click on the 0-second block to open the 'Fine-tune' modal and click skip all.</action>
+        <action>Click the "Done" button to close the modal.</action>
+        <action>Click on the 1-second block to open the Fine-tune modal and skip the first .1 second (the first block on the left).</action>
+        <action>Click the "Done" button to close the modal.</action>
+        <action>Verify that the 0s block is red (fully skipped) and the 1s block is orange (partially skipped).</action>
+        <action>Click play and ensure that the skipped segments are shown with a red overlay indicated that they will be cut when published.</action>
+        <action>Ensure that the active second block is highlighted with a yellow border on the seconds button.</action>
+        <action>Tap 'Publish' to advance to the next screen.</action>
+        <action>Verify that the screen title is now "Publishing Studio".</action>
+        </actions>
+</journey>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<journey name="Archives">
+    <description>Verify that users can see past projects and restore an archived project to active status.</description>
+    <actions xml:space="preserve">
+        <action>First we have to create a script so we can archive it, so click on Writers Room - Tap the "Writer's Room" button.</action>
+        <action>Type the following two lines EXACTLY into the Generated Script Content text box. Do NOT type these instructions into the box. ONLY type these two lines:
+"0s-5s: Master the perfect push-up right now!"
+"5s-15s: Hands shoulder-width, body straight from head to heels. Engage your core."</action>
+        <action>Tap the "Record" button to proceed to the Recording Studio.</action>
+        <action>Archive this script by clicking on the ↓ archive button and confirm the Archive Video prompt (click Yes).</action>
+        <action>On the home screen tap 'The Archives'.</action>
+        <action>Confirm that previously archived script appears in the list.</action>
+        <action>Tap on an archived video card and confirm Restore Project.</action>
+        <action>Verify that the selected project becomes the Active Project and the app shows the Recording Studio as the active step. </action>
+    </actions>
+</journey>

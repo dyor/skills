@@ -6,7 +6,7 @@ description: Imports a remote skill (single or collection) into the local `.skil
 # Skill: Import Remote Skill
 
 ## Overview
-This skill fetches a remote skill (or collection) from a URL and installs it. Single items go to `.skills/imported-skills`, and tasks bundles go to `.skills/tasks/`. Everything imported is tracked inside `.skills/IMPORTED-SKILLS.md`.
+This skill fetches a remote skill (or collection) from a URL and installs it. Single items go to `.skills/imported-skills`, task bundles go to `.skills/tasks/`, and planning skills go to `.skills/planning-skills/`. Everything imported is tracked inside `.skills/IMPORTED-SKILLS.md`.
 
 ## Execution Protocol
 

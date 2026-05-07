@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<journey name="Recording Studio">
+    <description>Verify that the user can record video using the front-facing camera while following the teleprompter.</description>
+    <actions xml:space="preserve">
+        <action>Tap the "Writer's Room" button.</action>
+      <action>Type the following EXACTLY into the Generated Script Content text box: "0s-5s: Master the perfect push-up right now!\n5s-15s: Hands shoulder-width, body straight from head to heels. Engage your core."</action>
+        <action>Tap the "Record" button to proceed to the Recording Studio.</action>
+      <action>Check that the bottom half of the screen shows the live front-facing camera view.</action>
+        <action>Tap the wide button labeled 'Start' on the right side of the bottom navigation bar to begin recording.</action>
+        <action>Wait for the 5-second countdown to finish.</action>
+        <action>Wait for 20 seconds while the teleprompter recording finishes.</action>
+        <action>Verify that the teleprompter advances correctly based on the target duration timestamps and finishes at about 19 seconds (given the 2 second buffer after each segment).</action>
+        <action>Check that the visual timeline advances automatically counting down the remaining time for the entire video (the script duration + 2 second buffers after each).</action>
+        <action>When recording completes, verify that navigation option 'Edit' appears.</action>
+        <action>Tap 'Edit' to advance to the next screen.</action>
+        <action>Verify that the screen title is now "Editing Studio".</action>
+    </actions>
+</journey>

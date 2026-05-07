@@ -259,17 +259,24 @@ def refresh_skills(base_skills_dir: Path):
 def run_import(url: str, base_skills_dir: Path, given_name: str, overwrite: bool):
     parsed = urllib.parse.urlparse(url)
     path_parts = [p for p in parsed.path.strip("/").split("/") if p]
-    is_task_bundle = False
-    bundle_name = ""
-
+    is_planning_skill = False
     if "tasks" in path_parts:
         tasks_index = path_parts.index("tasks")
         if tasks_index + 1 < len(path_parts):
             is_task_bundle = True
             bundle_name = path_parts[tasks_index + 1]
+    elif "planning-skills" in path_parts:
+        planning_index = path_parts.index("planning-skills")
+        if planning_index + 1 < len(path_parts):
+            is_task_bundle = True
+            is_planning_skill = True
+            bundle_name = path_parts[planning_index + 1]
 
     if is_task_bundle:
-        dest_dir = base_skills_dir / "tasks" / bundle_name
+        if is_planning_skill:
+            dest_dir = base_skills_dir / "planning-skills" / bundle_name
+        else:
+            dest_dir = base_skills_dir / "tasks" / bundle_name
         name = bundle_name
     else:
         name = given_name

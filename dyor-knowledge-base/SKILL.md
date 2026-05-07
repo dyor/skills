@@ -16,6 +16,10 @@ This skill acts as a repository of knowledge about available skills in the `dyor
   - **Description**: Scaffolds a complete 6-part Task Bundle (Prompt, Agent, Guide, Calculator, Validation, Hints) inside the remote `.skills/tasks/` directory for authoring a new chunk of orchestrated work.
   - **URL**: `https://github.com/dyor/skills/tree/main/create-task`
 
+- **`create-planning-skill`**
+  - **Description**: Scaffolds a complete 6-part Planning Skill (Prompt, Agent, Guide, Calculator, Validation, Hints) inside the remote `.skills/planning-skills/` directory for authoring a new chunk of orchestrated work.
+  - **URL**: `https://github.com/dyor/skills/tree/main/create-planning-skill`
+
 - **`generate-journey-report`**
   - **Description**: Automates the execution of an Agent Journey test and generates a persistent Markdown change review document with screenshots.
   - **URL**: `https://github.com/dyor/skills/tree/main/generate-journey-report`
@@ -36,18 +40,18 @@ This skill acts as a repository of knowledge about available skills in the `dyor
   - **Description**: A summary of all names and descriptions of skills in the dyor/skills repository, used to guide importing relevant skills.
   - **URL**: `https://github.com/dyor/skills/tree/main/dyor-knowledge-base`
 
-### Tasks (Bundles)
+### Tasks & Planning Skills (Bundles)
 
 - **`kmp-baseline`**
-  - **Description**: A complex bundle of interconnected reusable blueprints to get from a template to a full-featured baseline app.
-  - **URL**: `https://github.com/dyor/skills/tree/main/tasks/kmp-baseline`
-  - **Constraint**: Skills associated with this task are not to be installed individually - only install the entire task's collection of skills.
+  - **Description**: A complex bundle of interconnected reusable blueprints to get from a template to a full-featured baseline app. Available under both `tasks/` and `planning-skills/` structures.
+  - **URL**: `https://github.com/dyor/skills/tree/main/planning-skills/kmp-baseline` or `https://github.com/dyor/skills/tree/main/tasks/kmp-baseline`
+  - **Constraint**: Skills associated with this bundle are not to be installed individually - only install the entire collection of skills.
 
 ## Execution Protocol
 
 1. **Search & Suggestion**:
    - If a skill has not been imported and it may be relevant to the current prompt, or if the user explicitly asks to search `dyor-knowledge-base`, refer to this skill.
-   - Check if the required skill is already present in the local codebase (e.g., in `.skills/imported-skills/` or `.skills/tasks/`).
+   - Check if the required skill is already present in the local codebase (e.g., in `.skills/imported-skills/` or `.skills/tasks/`, or `.skills/planning-skills/`).
 
 2. **Import Prompt**:
    - If a relevant skill is found here but is not imported, ask the user if they want to import the skill.
@@ -60,4 +64,4 @@ This skill acts as a repository of knowledge about available skills in the `dyor
    - If `import-skill` is bootstrapped, use it to fetch the skill using the URLs listed above.
 
 4. **Task Constraint**:
-   - Remember that skills associated with a task in the tasks/ directory such as the `kmp-baseline` skills must only be installed as a complete collection, not individually.
+   - Remember that skills associated with a task/bundle in the tasks/ or planning-skills/ directories must only be installed as a complete collection, not individually.
