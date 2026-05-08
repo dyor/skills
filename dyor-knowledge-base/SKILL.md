@@ -12,17 +12,29 @@ This skill acts as a repository of knowledge about available skills in the `dyor
 
 ### Standalone Skills
 
-- **`create-task`**
-  - **Description**: Scaffolds a complete 6-part Task Bundle (Prompt, Agent, Guide, Calculator, Validation, Hints) inside the remote `.skills/tasks/` directory for authoring a new chunk of orchestrated work.
-  - **URL**: `https://github.com/dyor/skills/tree/main/create-task`
+- **`compose-migration-hints`**
+  - **Description**: A collection of architectural, UI, and workflow guidelines learned from migrating to Android using Jetpack Compose, Room, Koin, and Maps.
+  - **URL**: `https://github.com/dyor/skills/tree/main/compose-migration-hints`
 
 - **`create-planning-skill`**
   - **Description**: Scaffolds a complete 6-part Planning Skill (Prompt, Agent, Guide, Calculator, Validation, Hints) inside the remote `.skills/planning-skills/` directory for authoring a new chunk of orchestrated work.
   - **URL**: `https://github.com/dyor/skills/tree/main/create-planning-skill`
 
-- **`generate-journey-report`**
-  - **Description**: Automates the execution of an Agent Journey test and generates a persistent Markdown change review document with screenshots.
-  - **URL**: `https://github.com/dyor/skills/tree/main/generate-journey-report`
+- **`create-task`**
+  - **Description**: Scaffolds a complete 6-part Task Bundle (Prompt, Agent, Guide, Calculator, Validation, Hints) inside the remote `.skills/tasks/` directory for authoring a new chunk of orchestrated work.
+  - **URL**: `https://github.com/dyor/skills/tree/main/create-task`
+
+- **`dyor-knowledge-base`**
+  - **Description**: A summary of all names and descriptions of skills in the dyor/skills repository, used to guide importing relevant skills.
+  - **URL**: `https://github.com/dyor/skills/tree/main/dyor-knowledge-base`
+
+- **`execute-and-report-journey`**
+  - **Description**: Executes a Journey test, validates UI, captures screenshots, and maintains a live Markdown report of its progress with Before/After image comparisons.
+  - **URL**: `https://github.com/dyor/skills/tree/main/execute-and-report-journey`
+
+- **`generate-code-review`**
+  - **Description**: Generates a comprehensive Markdown Change Review document by aggregating journey reports, grading contexts, key architectural decisions, and a pre-publishing checklist. Features optional Git integration and scope-based historical summaries.
+  - **URL**: `https://github.com/dyor/skills/tree/main/generate-code-review`
 
 - **`import-skill`**
   - **Description**: Imports a remote skill (single or collection) into the local `.skills/imported-skills` folder using a Python script. Can also refresh all skills.
@@ -32,13 +44,13 @@ This skill acts as a repository of knowledge about available skills in the `dyor
   - **Description**: Use this skill when you need to test or validate app behavior, write an Android Studio Journey, automate UI testing, or define user flow validation requirements.
   - **URL**: `https://github.com/dyor/skills/tree/main/journey-writing-skill`
 
+- **`migration-workflow-directives`**
+  - **Description**: Core directives for managing an autonomous migration project. Enforces a strict Test-Driven Development (TDD) loop, Autonomous Execution, and Zero Permission constraints.
+  - **URL**: `https://github.com/dyor/skills/tree/main/migration-workflow-directives`
+
 - **`update-importable-skill`**
   - **Description**: A utility skill to programmatically update or bump the front-matter metadata (like version numbers) of existing SKILL.md files.
   - **URL**: `https://github.com/dyor/skills/tree/main/update-importable-skill`
-
-- **`dyor-knowledge-base`**
-  - **Description**: A summary of all names and descriptions of skills in the dyor/skills repository, used to guide importing relevant skills.
-  - **URL**: `https://github.com/dyor/skills/tree/main/dyor-knowledge-base`
 
 ### Tasks & Planning Skills (Bundles)
 

@@ -1,6 +1,6 @@
 ---
 name: compose-migration-hints
-description: A collection of architectural, UI, and workflow guidelines learned from migrating a complex iOS app to Android using Jetpack Compose, Room, Koin, and Maps.
+description: A collection of architectural, UI, and workflow guidelines learned from migrating apps to Android using Jetpack Compose, Room, Koin, and Maps.
 version: 1.0.1
 author: dyor
 ---
