@@ -44,6 +44,10 @@ This skill acts as a repository of knowledge about available skills in the `dyor
   - **Description**: Core directives for managing an autonomous migration project. Enforces a strict Test-Driven Development (TDD) loop, Autonomous Execution, and Zero Permission constraints.
   - **URL**: `https://github.com/dyor/skills/tree/main/migration-workflow-directives`
 
+- **`multi-project-skill`**
+  - **Description**: Central utility skill to resolve environment paths ($USER_HOME, $PROJECT_HOME) and share agentic capabilities across multiple local Android Studio projects.
+  - **URL**: `https://github.com/dyor/skills/tree/main/multi-project-skill`
+
 - **`update-importable-skill`**
   - **Description**: A utility skill to programmatically update or bump the front-matter metadata (like version numbers) of existing SKILL.md files.
   - **URL**: `https://github.com/dyor/skills/tree/main/update-importable-skill`

@@ -63,5 +63,17 @@ Create a `SKILL.md` file inside each of the 6 directories you just created. Use 
 - Also instruct the author to place private contexts here, such as internal style guides, undocumented APIs, or codebase-specific architectural rules.
 - Remind the author that real-world code snippets should be placed in the adjacent `examples/` directory for the agent to ingest.
 
-### Step 4: Finalize
-After generating all 6 files, inform the user that the planning skill has been successfully scaffolded at `.skills/planning-skills/<planning-skill-name>/` and ask them which blueprint they would like to start fleshing out first.
+---
+
+### Step 4: Scaffold Parent README.md File
+Create a `README.md` file inside the root of `.skills/planning-skills/<planning-skill-name>/`.
+**Purpose**: Provide clear documentation to developers and agents on what this planning skill is all about and how to kick it off.
+**Content Requirements**:
+- **Overview of the Collection**: Explain that this is a highly orchestrated planning skill composed of multiple blueprints (Prompt, Agent, Guide, Calculator, Validation, Hints).
+- **Kick-Off Instructions**: Explicitly instruct developers or agents on how to kick off the planning skill using the prompt blueprint (e.g. running the orchestrator instructions inside `<planning-skill-name>-prompt-blueprint/SKILL.md`).
+- **Workflow Components**: Outline and describe each blueprint included in the collection so that developers understand what is scaffolded.
+
+---
+
+### Step 5: Finalize
+After generating all 7 files (6 blueprint SKILL.md files + 1 parent README.md), inform the user that the planning skill has been successfully scaffolded at `.skills/planning-skills/<planning-skill-name>/` and ask them which blueprint they would like to start fleshing out first.

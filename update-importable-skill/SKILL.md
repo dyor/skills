@@ -11,7 +11,7 @@ This standalone skill is used by Skill Authors to easily add or update custom YA
 ## Execution Protocol
 When the user asks you to "update the importable skill" or "bump the skill version":
 
-1. Identify which `SKILL.md` (or collection of `SKILL.md` files in a task bundle) they want to update.
+1. Identify which `SKILL.md` (or collection of `SKILL.md` files in a planning skill bundle) they want to update.
 2. Ask the user what keys and values they want to change or add to the YAML front-matter (e.g., `version`, `author`, `description`).
 3. Using your file-editing tools (e.g., `replace_file_content`), parse the top YAML block bounded by `---` and insert or update the requested fields.
 4. If multiple files (like in a task bundle) need updating, do this iteratively or use `run_command` with a custom shell or python script to batch update them.
