@@ -34,5 +34,5 @@ Provide the following command/instruction to your AI agent as the very first pro
 
 ### Step 3: Configure and Validate
 1. The agent will parse the blueprints and ask you to confirm or customize project parameters (e.g. App Name, Architecture, Visual Style).
-2. It will then generate localized `-task` directories (e.g. `kmp-baseline-guide-task/`) inside the same `kmp-baseline` folder.
+2. It will then generate localized `-local` directories (e.g. `kmp-baseline-guide-local/`) inside the same `kmp-baseline` folder.
 3. Finally, it will clean up the `-blueprint` folders, leaving a clean workspace ready for development with this `README.md` remaining as your execution guide.

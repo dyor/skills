@@ -30,14 +30,14 @@ Create a `SKILL.md` file inside each of the 6 directories you just created. Use 
 #### 1. `<planning-skill-name>-prompt-blueprint`
 **Purpose**: The entry point skill that tells the agent how to localize the blueprints into the developer's local `.skills/` directory.
 **Content Requirements**:
-- Write a prompt instructing the agent to sequentially read the sibling blueprints using relative paths (e.g., `../<planning-skill-name>-guide-blueprint/SKILL.md`) and generate their local, codebase-specific `-task` equivalents (e.g., `.skills/<planning-skill-name>-guide-task/SKILL.md`).
+- Write a prompt instructing the agent to sequentially read the sibling blueprints using relative paths (e.g., `../<planning-skill-name>-guide-blueprint/SKILL.md`) and generate their local, codebase-specific `-local` equivalents (e.g., `.skills/<planning-skill-name>-guide-local/SKILL.md`).
 - It must instruct the agent to prompt the host developer for specific variables needed to populate the local guides/hints (similar to soliciting the "App Name" and "Target Audience" in `kmp-baseline`).
 
 #### 2. `<planning-skill-name>-agent-blueprint`
 **Purpose**: Specific agent instructions used to create/update an `AGENTS.md` file in the root of the project.
 **Content Requirements**:
 - Write instructions that teach the AI agent how to properly use this planning skill *without* requiring the developer to directly steer it. 
-- It should tell the agent to strictly follow the current Phase/Step in the `guide-task` and heavily reference the `hints-task` for technical execution guardrails.
+- It should tell the agent to strictly follow the current Phase/Step in the `guide-local` and heavily reference the `hints-local` for technical execution guardrails.
 
 #### 3. `<planning-skill-name>-guide-blueprint`
 **Purpose**: The step-by-step set of instructions mapping out the work.
@@ -48,7 +48,7 @@ Create a `SKILL.md` file inside each of the 6 directories you just created. Use 
 #### 4. `<planning-skill-name>-calculator-blueprint`
 **Purpose**: Built to measure planning skill completion relative to the guide.
 **Content Requirements**:
-- Write a skill script that parses the `guide-task` file, counts the total number of `- [ ]` markdown checkboxes versus the checked `- [x]` boxes, and outputs a formatted progress report so the developer knows how close the planning skill is to being done.
+- Write a skill script that parses the `guide-local` file, counts the total number of `- [ ]` markdown checkboxes versus the checked `- [x]` boxes, and outputs a formatted progress report so the developer knows how close the planning skill is to being done.
 
 #### 5. `<planning-skill-name>-validation-blueprint`
 **Purpose**: Validations that must pass before the planning skill is considered done.

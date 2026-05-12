@@ -10,7 +10,7 @@ This document contains a rigorous, multi-layered testing plan tailored precisely
 ## Execution Protocol
 1.  **Agent Validations**: The AI agent will first execute any programmatically verifiable tests, scripts, or inspection to confirm the behavior.
 2.  **User Validations**: The AI agent will then prompt the User to manually navigate the application UI to functionally experience the journey. 
-3.  **Bug Tracking**: If a journey fails validation, the AI agent must abort the validation process, update the appropriate phase in `kmp-baseline-guide-task` with a new `**Agent Action**: Fix bug [...]`, and resolve the issue before re-attempting validation.
+3.  **Bug Tracking**: If a journey fails validation, the AI agent must abort the validation process, update the appropriate phase in `kmp-baseline-guide-local` with a new `**Agent Action**: Fix bug [...]`, and resolve the issue before re-attempting validation.
 
 ---
 

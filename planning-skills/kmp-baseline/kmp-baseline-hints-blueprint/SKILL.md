@@ -11,11 +11,11 @@ Detailed instructions and best practices for configuring and developing within t
 
 ### Materialization Instructions
 When applying this blueprint to a new project:
-1. Create a new directory in the project's root called `.skills/planning-skills/kmp-baseline/kmp-baseline-hints-task/`.
-2. Copy this blueprint's `SKILL.md` into `.skills/planning-skills/kmp-baseline/kmp-baseline-hints-task/SKILL.md` and ensure the `name` in the YAML frontmatter of the newly copied file is changed to `kmp-baseline-hints-task`.
-3. **CRITICAL**: You MUST copy the entire `examples/` directory from this blueprint's directory into the new `.skills/planning-skills/kmp-baseline/kmp-baseline-hints-task/` directory so that it sits alongside the new `SKILL.md`.
+1. Create a new directory in the project's root called `.skills/planning-skills/kmp-baseline/kmp-baseline-hints-local/`.
+2. Copy this blueprint's `SKILL.md` into `.skills/planning-skills/kmp-baseline/kmp-baseline-hints-local/SKILL.md` and ensure the `name` in the YAML frontmatter of the newly copied file is changed to `kmp-baseline-hints-local`.
+3. **CRITICAL**: You MUST copy the entire `examples/` directory from this blueprint's directory into the new `.skills/planning-skills/kmp-baseline/kmp-baseline-hints-local/` directory so that it sits alongside the new `SKILL.md`.
 
-- This re-usable skill will be used to create `kmp-baseline-hints-task/SKILL.md` within a user's codebase (in the /.skills directory in accordance with convention) that will be used to provide details where the agent typically makes mistakes and wastes time and tokens in getting KMP projects properly configured. 
+- This re-usable skill will be used to create `kmp-baseline-hints-local/SKILL.md` within a user's codebase (in the /.skills directory in accordance with convention) that will be used to provide details where the agent typically makes mistakes and wastes time and tokens in getting KMP projects properly configured. 
 - Use this when initializing a new KMP project that requires Room, Compose Navigation 3, Koin, Material 3, Calf permissions, and native integrations (e.g., camera and microphone).
 - This is helpful for resolving tricky Gradle dependencies, debugging "MissingResourceException", or diagnosing KMP database migration issues.
 - Use this when working with native UI components in Compose (like `AndroidView` or `UIKitView`) or dealing with native video playback/trimming cross-platform.
@@ -330,7 +330,7 @@ actual fun getInMemoryDatabase(): AppDatabase {
 
 #### Avoid Version Roulette (CRITICAL AI INSTRUCTION)
 *   **Rule**: Before randomly changing version numbers or regressing to previous library versions, **ALWAYS** follow these steps:
-    1.  **Check Existing Documentation**: Consult `.skills/planning-skills/kmp-baseline/kmp-baseline-hints-task/SKILL.md` and `AGENTS.md` for any forbidden or recommended versions.
+    1.  **Check Existing Documentation**: Consult `.skills/planning-skills/kmp-baseline/kmp-baseline-hints-local/SKILL.md` and `AGENTS.md` for any forbidden or recommended versions.
     2.  **Web Search & Official Docs**: Use `web_search` and `search_android_docs` to find official migration guides, known issues, or compatibility tables for the library in question.
     3.  **Prioritize Code Updates**: The error is most likely due to API changes in a newer library version. Focus on updating your code to match the new version's API, rather than downgrading the library.
     4.  **Diagnose Transitive Conflicts**: Use Gradle's `dependencyInsight` command to identify potential transitive dependency mismatches. For example, to diagnose Ktor issues for the iOS ARM64 compilation classpath:

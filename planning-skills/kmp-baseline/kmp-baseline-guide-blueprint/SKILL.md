@@ -3,15 +3,15 @@ name: kmp-baseline-guide-blueprint
 description: The central source of truth for planning, tracking progress, and orchestrating work between the AI Agent and the User in this codebase.
 ---
 
-# Skill: Project Orchestration via kmp-baseline-guide-task/SKILL.md
+# Skill: Project Orchestration via kmp-baseline-guide-local/SKILL.md
 
 ## Overview
-This re-usable skill provides the structure and instructions for an AI Agent to generate, maintain, and execute a `kmp-baseline-guide-task/SKILL.md` file specific to the user's codebase. The `kmp-baseline-guide-task/SKILL.md` is the central source of truth for planning, tracking progress, and orchestrating work between the AI Agent and the User in a codebase during a buildout of a baseline KMP project (e.g., adding baseline KMP cababilities to a KMP template).
+This re-usable skill provides the structure and instructions for an AI Agent to generate, maintain, and execute a `kmp-baseline-guide-local/SKILL.md` file specific to the user's codebase. The `kmp-baseline-guide-local/SKILL.md` is the central source of truth for planning, tracking progress, and orchestrating work between the AI Agent and the User in a codebase during a buildout of a baseline KMP project (e.g., adding baseline KMP cababilities to a KMP template).
 
-## Materialization Instructions for Generating a New `kmp-baseline-guide-task`
-When placed in a new codebase and asked to create a `kmp-baseline-guide-task/SKILL.md`, create the file at `.skills/planning-skills/kmp-baseline/kmp-baseline-guide-task/SKILL.md`. Ask for details on the project requirements and generate the document following this exact structure.
+## Materialization Instructions for Generating a New `kmp-baseline-guide-local`
+When placed in a new codebase and asked to create a `kmp-baseline-guide-local/SKILL.md`, create the file at `.skills/planning-skills/kmp-baseline/kmp-baseline-guide-local/SKILL.md`. Ask for details on the project requirements and generate the document following this exact structure.
 
-Also, copy the contents of the blueprint's `resources/` folder to the materialized task's `resources/` folder to make assets available to the task runner (this is done automatically during materialization by the agent).
+Also, copy the contents of the blueprint's `resources/` folder to the materialized local's `resources/` folder to make assets available to the task runner (this is done automatically during materialization by the agent).
 
 ### 1. Project Overview
 Define the high-level intent, core architecture, and stylistic guidelines of the project. When information is needed from the user, such as [App Name] or [Architecture]
@@ -25,15 +25,15 @@ Within each phase, define numbered steps with specific checklist items.
 Prefix each task with the responsible party to ensure clear separation of duties:
 *   `**User Action**:` For manual steps the human must take (e.g., running `git init`, testing on a physical device, adding visual assets, creating external accounts).
 *   `**Agent Action**:` For code generation, refactoring, build configuration, and file modifications the AI will perform.
-*   `**Validation**:` A reserved step explicitly triggering the execution of specific user journeys defined in `.skills/planning-skills/kmp-baseline/kmp-baseline-validation-task/SKILL.md`. This represents an important end-to-end journey that the agent and the user are going to confirm is working and track.
+*   `**Validation**:` A reserved step explicitly triggering the execution of specific user journeys defined in `.skills/planning-skills/kmp-baseline/kmp-baseline-validation-local/SKILL.md`. This represents an important end-to-end journey that the agent and the user are going to confirm is working and track.
 
 ### 4. Tracking State
 Use Markdown checkboxes as bulleted lists to track state, which ensures they render on separate lines. All new tasks should start as `- [ ]`. When completed, update the document to `- [x]`.
 
-## `kmp-baseline-guide-task/SKILL.md` Template for New KMP Project
+## `kmp-baseline-guide-local/SKILL.md` Template for New KMP Project
 ```markdown
 ---
-name: kmp-baseline-guide-task
+name: kmp-baseline-guide-local
 description: The central source of truth for planning, tracking progress, and orchestrating work between the AI Agent and the User in this codebase.
 ---
 
@@ -130,5 +130,5 @@ When the User says "Execute" or "Continue with the guide":
     -   Validate the changes (e.g., run local unit tests or build commands if applicable).
     -   Update the guide file, changing the `- [ ]` to `- [x]` for the completed task.
     -   Move on to the next task or pause if the next task requires the User.
-4.  **STOP ON USER ACTIONS**: You must process the `kmp-baseline-guide-task` strictly sequentially. If the next unchecked item in the guide is a User Action, you MUST STOP execution, explicitly prompt the user to complete that action, and wait for their confirmation. Do NOT proceed to subsequent Agent Actions or Validations until the user confirms the step is done.
-5.  Periodically, at the end of a session or after major milestones, run the instructions in `.skills/planning-skills/kmp-baseline/kmp-baseline-calculator-task/SKILL.md` to update the progress tracking and keep it up to date.
+4.  **STOP ON USER ACTIONS**: You must process the `kmp-baseline-guide-local` strictly sequentially. If the next unchecked item in the guide is a User Action, you MUST STOP execution, explicitly prompt the user to complete that action, and wait for their confirmation. Do NOT proceed to subsequent Agent Actions or Validations until the user confirms the step is done.
+5.  Periodically, at the end of a session or after major milestones, run the instructions in `.skills/planning-skills/kmp-baseline/kmp-baseline-calculator-local/SKILL.md` to update the progress tracking and keep it up to date.
