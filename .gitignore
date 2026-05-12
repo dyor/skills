@@ -4,3 +4,7 @@
 ._*
 .Spotlight-V100
 .Trashes
+
+# Python Cache
+__pycache__/
+*.pyc

@@ -130,7 +130,7 @@ def download_raw(url: str, dest_dir: Path, name: str, base_skills_dir: Path, ove
         print(f"Error downloading file: {e}")
         sys.exit(1)
 
-def relocate_skill_or_folder(src_path: str, dest_dir: Path, is_task_bundle: bool = False):
+def relocate_skill_or_folder(src_path: str, dest_dir: Path, is_planning_skill: bool = False):
     if os.path.exists(os.path.join(src_path, "SKILL.md")):
         # Single skill mode
         dest_dir.mkdir(parents=True, exist_ok=True)
@@ -146,7 +146,7 @@ def relocate_skill_or_folder(src_path: str, dest_dir: Path, is_task_bundle: bool
     else:
         # Multi-skill mode (collection folder)
         skills_found = False
-        target_dir = dest_dir if is_task_bundle else dest_dir.parent
+        target_dir = dest_dir if is_planning_skill else dest_dir.parent
         target_dir.mkdir(parents=True, exist_ok=True)
 
         for item in os.listdir(src_path):
@@ -168,7 +168,7 @@ def relocate_skill_or_folder(src_path: str, dest_dir: Path, is_task_bundle: bool
             print(f"Error: No SKILL.md found directly in {src_path} or any of its immediate subdirectories.")
             sys.exit(1)
 
-def download_git_sparse(url: str, dest_dir: Path, name: str, base_skills_dir: Path, overwrite: bool, is_task_bundle: bool = False):
+def download_git_sparse(url: str, dest_dir: Path, name: str, base_skills_dir: Path, overwrite: bool, is_planning_skill: bool = False):
     check_overwrite(dest_dir, overwrite)
     parsed = urllib.parse.urlparse(url)
     parts = [p for p in parsed.path.strip("/").split("/") if p]
@@ -217,7 +217,7 @@ def download_git_sparse(url: str, dest_dir: Path, name: str, base_skills_dir: Pa
                 print(f"Error: Path '{sub_path}' does not exist in the repository.")
                 sys.exit(1)
 
-            relocate_skill_or_folder(src_path, dest_dir, is_task_bundle)
+            relocate_skill_or_folder(src_path, dest_dir, is_planning_skill)
             update_tracking_file(base_skills_dir, name, dest_dir, url, commit_hash)
             inject_frontmatter(dest_dir, commit_hash, url)
 
@@ -260,23 +260,14 @@ def run_import(url: str, base_skills_dir: Path, given_name: str, overwrite: bool
     parsed = urllib.parse.urlparse(url)
     path_parts = [p for p in parsed.path.strip("/").split("/") if p]
     is_planning_skill = False
-    if "tasks" in path_parts:
-        tasks_index = path_parts.index("tasks")
-        if tasks_index + 1 < len(path_parts):
-            is_task_bundle = True
-            bundle_name = path_parts[tasks_index + 1]
-    elif "planning-skills" in path_parts:
+    if "planning-skills" in path_parts:
         planning_index = path_parts.index("planning-skills")
         if planning_index + 1 < len(path_parts):
-            is_task_bundle = True
             is_planning_skill = True
             bundle_name = path_parts[planning_index + 1]
 
-    if is_task_bundle:
-        if is_planning_skill:
-            dest_dir = base_skills_dir / "planning-skills" / bundle_name
-        else:
-            dest_dir = base_skills_dir / "tasks" / bundle_name
+    if is_planning_skill:
+        dest_dir = base_skills_dir / "planning-skills" / bundle_name
         name = bundle_name
     else:
         name = given_name
@@ -293,7 +284,7 @@ def run_import(url: str, base_skills_dir: Path, given_name: str, overwrite: bool
             url = url.replace("/blob/", "/raw/")
             download_raw(url, dest_dir, name, base_skills_dir, overwrite)
         else:
-            download_git_sparse(url, dest_dir, name, base_skills_dir, overwrite, is_task_bundle)
+            download_git_sparse(url, dest_dir, name, base_skills_dir, overwrite, is_planning_skill)
     else:
         download_raw(url, dest_dir, name, base_skills_dir, overwrite)
 
