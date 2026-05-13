@@ -163,6 +163,9 @@ def relocate_skill_or_folder(src_path: str, dest_dir: Path, is_planning_skill: b
                     else:
                         shutil.copy2(ss, dd)
                 print(f"Successfully imported skill from collection into {single_dest}")
+            elif os.path.isfile(s) and item.lower() == "readme.md" and is_planning_skill:
+                shutil.copy2(s, target_dir / item)
+                print(f"Successfully imported README.md to {target_dir / item}")
 
         if not skills_found:
             print(f"Error: No SKILL.md found directly in {src_path} or any of its immediate subdirectories.")
@@ -287,6 +290,15 @@ def run_import(url: str, base_skills_dir: Path, given_name: str, overwrite: bool
             download_git_sparse(url, dest_dir, name, base_skills_dir, overwrite, is_planning_skill)
     else:
         download_raw(url, dest_dir, name, base_skills_dir, overwrite)
+
+    if is_planning_skill:
+        print("\n[IMPORTANT FOR AGENT] This is a planning-skill. You MUST read the README.md file located at:")
+        try:
+            rel_readme = (dest_dir / "README.md").relative_to(base_skills_dir).as_posix()
+            print(f"  .skills/{rel_readme}")
+        except ValueError:
+            print(f"  {(dest_dir / 'README.md').as_posix()}")
+        print("immediately to understand how to initialize and execute this planning skill. Do not attempt to run any blueprints or guides before reading the README.md first.")
 
 
 def main():
