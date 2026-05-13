@@ -270,8 +270,9 @@ def run_import(url: str, base_skills_dir: Path, given_name: str, overwrite: bool
             bundle_name = path_parts[planning_index + 1]
 
     if is_planning_skill:
-        dest_dir = base_skills_dir / "planning-skills" / bundle_name
-        name = bundle_name
+        rel_path = "/".join(path_parts[planning_index + 1:])
+        dest_dir = base_skills_dir / "planning-skills" / rel_path
+        name = path_parts[-1]
     else:
         name = given_name
         if not name:
@@ -292,13 +293,24 @@ def run_import(url: str, base_skills_dir: Path, given_name: str, overwrite: bool
         download_raw(url, dest_dir, name, base_skills_dir, overwrite)
 
     if is_planning_skill:
-        print("\n[IMPORTANT FOR AGENT] This is a planning-skill. You MUST read the README.md file located at:")
-        try:
-            rel_readme = (dest_dir / "README.md").relative_to(base_skills_dir).as_posix()
-            print(f"  .skills/{rel_readme}")
-        except ValueError:
-            print(f"  {(dest_dir / 'README.md').as_posix()}")
-        print("immediately to understand how to initialize and execute this planning skill. Do not attempt to run any blueprints or guides before reading the README.md first.")
+        readme_path = dest_dir / "README.md"
+        if not readme_path.exists():
+            # Fallback to check parent directories up to planning-skills folder
+            curr = dest_dir.parent
+            while curr and curr != base_skills_dir / "planning-skills" and curr != base_skills_dir:
+                if (curr / "README.md").exists():
+                    readme_path = curr / "README.md"
+                    break
+                curr = curr.parent
+
+        if readme_path.exists():
+            print("\n[IMPORTANT FOR AGENT] This is a planning-skill. You MUST read the README.md file located at:")
+            try:
+                rel_readme = readme_path.relative_to(base_skills_dir).as_posix()
+                print(f"  .skills/{rel_readme}")
+            except ValueError:
+                print(f"  {readme_path.as_posix()}")
+            print("immediately to understand how to initialize and execute this planning skill. Do not attempt to run any blueprints or guides before reading the README.md first.")
 
 
 def main():

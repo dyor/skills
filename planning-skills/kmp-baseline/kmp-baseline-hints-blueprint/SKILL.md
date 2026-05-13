@@ -390,7 +390,7 @@ actual fun getInMemoryDatabase(): AppDatabase {
             // ...
             suspend fun generateScript(prompt: String): String {
                 // ...
-                val response = httpClient.post("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent") {
+                val response = httpClient.post("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent") {
                     url { parameters.append("key", BuildConfig.GEMINI_API_KEY) }
                     // ...
                 }
@@ -433,13 +433,19 @@ actual fun getInMemoryDatabase(): AppDatabase {
     5.  **Kotlin to Swift Interop Warning (CRITICAL)**: **NEVER** name a shared Kotlin function `init()` if it will be called from Swift (e.g., `fun init()`). Swift uses `init` exclusively for object constructors, leading to the compiler error `'init' is a member of the type; use 'type(of: ...)'`. Always use a name like `initialize()`.
 
 #### Gemini API Configuration
-*   **Problem**: Encountering 400 Client Errors ("No candidates received") when using older Gemini models.
-*   **Solution**: Ensure you are using the correct endpoint URL and payload structure for the specific model. The `v1beta` endpoint for `gemini-2.5-flash` requires a very specific `contents` array structure. You MUST use the `gemini-2.5-flash` model version as older ones may be deprecated or restricted.
-    *   **Endpoint**: `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$apiKey`
+*   **Problem**: Encountering 400/404 Client Errors ("No candidates received" or model/method not supported) when using older or deprecated Gemini models.
+*   **Solution**: Ensure you are using the correct endpoint URL and payload structure for the specific model. The `v1beta` endpoint for `gemini-3.1-flash-lite` requires a very specific `contents` array structure. You MUST use the most up-to-date stable model version as older ones (like `gemini-2.0-flash` or `gemini-2.5-flash`) may be deprecated or restricted.
+    *   **Endpoint**: `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=$apiKey`
     *   **JSON Structure**: 
         ```json
         { "contents": [ { "parts": [ { "text": "Your prompt here" } ] } ] }
         ```
+*   **CRITICAL AGENT INSTRUCTION: Confirming the Latest Gemini Model Version**:
+    *   Gemini models are updated and deprecated rapidly. If you encounter a "model not found", "method not supported", or HTTP 400/404 error, **do NOT assume the version identifier is correct.**
+    *   You MUST query the available models list using the `ListModels` API endpoint to retrieve the exact active model strings.
+    *   **Query Command**: `curl -s "https://generativelanguage.googleapis.com/v1beta/models?key=$apiKey"`
+    *   Alternatively, consult the official model list page at `https://ai.google.dev/gemini-api/docs/models/gemini` using your browser/web-reading tools to find active stable/preview model strings.
+    *   Once confirmed, update your HTTP client request URL with the verified model name (e.g. `gemini-3.1-flash-lite` or latest stable/preview version).
 
 *   **Problem**: Encountering `java.lang.ExceptionInInitializerError` or `java.lang.NoClassDefFoundError` when instantiating `HttpClient()` from `io.ktor.client.HttpClient` in `commonMain`.
 *   **Reason**: Ktor's `HttpClient` requires a platform-specific "engine" (like OkHttp on Android, Darwin on iOS) to actually make the network calls. If the engine dependency isn't provided to the specific target source sets, the client fails to initialize at runtime.
