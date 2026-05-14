@@ -2,13 +2,18 @@
 
 Welcome to the Skills Repository! This collection contains skills and "tasks" (tasks are a collection of skills designed to help get through a large chunk of work - like standing up a baseline KMP app, or migrating from an old library to a new one). These skills are hosted remotely (here or some other github repo) and intended to be localized or imported into your codebase. 
 
+> **New here?** Read [import-skill/references/IMPORTING-SKILLS-DOCUMENTATION.md](./import-skill/references/IMPORTING-SKILLS-DOCUMENTATION.md) for the end-to-end story: how authors publish and version skills, how developers import them, and how version-aware refresh detects drift. The two skills below — `import-skill` and `update-importable-skill` — are two halves of that one lifecycle.
+
 ## 1. Importing Standalone Skills
 
 A standalone skill provides your AI agent with a specific new capability. Because you need the `import-skill` tool to fetch other tools dynamically, you must first bootstrap it. 
 
 ### Step 1: Bootstrap the `import-skill`
 To get started in a fresh project, tell your AI Agent to execute this exact prompt:
-> Please bootstrap the 'import-skill' into this codebase. Download the main skill blueprint from `https://raw.githubusercontent.com/dyor/skills/main/import-skill/SKILL.md` and save it directly to `.skills/import-skill/SKILL.md`. Then, download its required python script from `https://raw.githubusercontent.com/dyor/skills/main/import-skill/scripts/import_skill.py` and save it to `.skills/import-skill/scripts/import_skill.py`.
+> Please bootstrap the 'import-skill' into this codebase. Download three files:
+> 1. The SKILL.md from `https://raw.githubusercontent.com/dyor/skills/main/import-skill/SKILL.md` → save to `.skills/import-skill/SKILL.md`.
+> 2. The python script from `https://raw.githubusercontent.com/dyor/skills/main/import-skill/scripts/import_skill.py` → save to `.skills/import-skill/scripts/import_skill.py`.
+> 3. The lifecycle documentation from `https://raw.githubusercontent.com/dyor/skills/main/import-skill/references/IMPORTING-SKILLS-DOCUMENTATION.md` → save to `.skills/import-skill/references/IMPORTING-SKILLS-DOCUMENTATION.md`. This is the reference doc agents should read when answering broader questions about skill versioning, refresh, or the author/consumer workflow.
 
 ### Step 2: Import Other Skills
 Once the `import-skill` is in your codebase, you can prompt your AI agent to download and install any other standalone skill simply by feeding it the remote GitHub URL. 
@@ -33,7 +38,7 @@ Instead of flattening the downloaded files into generic folders, the importer ca
 
 ## 3. Best Practices for Skill Authors
 
-If you are a developer authoring your own portable skills for distribution via GitHub, you'll want to ensure that other developers can gracefully track, integrate, and verify your tools. 
+If you are a developer authoring your own portable skills for distribution via GitHub, you'll want to ensure that other developers can gracefully track, integrate, and verify your tools. See [import-skill/references/IMPORTING-SKILLS-DOCUMENTATION.md](./import-skill/references/IMPORTING-SKILLS-DOCUMENTATION.md) for the full author-and-consumer lifecycle, including when to bump `version:` and how downstream refresh detects drift.
 
 When an end-user runs `import-skill` on your repository, the script automatically injects `import_commit`, `import_date`, and `import_url` into the user's local `SKILL.md` file. However, for maximum professionalism, you should maintain rich, semantic metadata directly on the raw files you publish.
 
