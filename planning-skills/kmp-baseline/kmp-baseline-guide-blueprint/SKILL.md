@@ -69,7 +69,7 @@ Goal: Implement a minimal feature set to validate all core libraries working tog
 - [ ] **Agent Action**: Allow the user to drill into the joke detail view (showing the full joke) with a back button supported by Compose Navigation 3.
 - [ ] **Agent Action**: Ensure all these UI elements use the established Material 3 theme and spacing system (no hardcoded colors or padding).
 - [ ] **Agent Action**: Create basic unit tests for the data layer and repository.
-- [ ] *Validation*: App boots, joke button pulls data, saves to Room, list updates, navigation works. Baseline is complete.
+- [ ] **Validation**: Execute Baseline Journey (Joke App) using the execute-and-report-journey skill.
 
 ## Phase 3: The Factory - Foundation & Aesthetics
 Goal: Transition from the baseline app to the product, applying styles and branding.
@@ -79,6 +79,7 @@ Goal: Transition from the baseline app to the product, applying styles and brand
 - [ ] **Agent Action**: Set `film_noir.png` as background image.
 - [ ] **Agent Action**: Override the clean baseline Material theme with the high-contrast Film Noir colors (e.g., overriding purple/greys with cinematic darks and golds as seen in reference codebase).
 - [ ] **Agent Action**: Rebrand the app (string resources, icons).
+- [ ] **Validation**: Execute Aesthetic & Branding Journey using the execute-and-report-journey skill.
 
 ## Phase 4: The Factory - Core Workflows
 Goal: Implement the specific features of the video production application.
@@ -86,32 +87,37 @@ Goal: Implement the specific features of the video production application.
 ### Step 1: Writer's Room & Gemini Scripts
 - [ ] **Agent Action**: Implement the teleprompter script generation with Gemini. Prompt should request timestamps (e.g. `0s-5s`) and no conversational filler.
 - [ ] **Agent Action**: Implement teleprompter logic adding a **2-second buffer** after each segment for calculated read time.
+- [ ] **Validation**: Execute Journey 1 (Writer's Room) using the execute-and-report-journey skill.
 
 ### Step 2: Recording Studio
 - [ ] **Agent Action**: Implement front-facing camera view (bottom half) and teleprompter overlay (top half).
 - [ ] **Agent Action**: Implement a **5-second countdown** before recording starts.
 - [ ] **Agent Action**: Implement a visual timeline counting down remaining time for the entire video (including buffers).
 - [ ] **Agent Action**: Add an **Archive button** (↓) in this screen to archive the active script.
+- [ ] **Validation**: Execute Journey 2 (Recording Studio) using the execute-and-report-journey skill.
 
 ### Step 3: Editing Studio
 - [ ] **Agent Action**: Implement a timeline of seconds blocks matching the recorded video length.
 - [ ] **Agent Action**: Implement a **Fine-tune modal** (opened by tapping a second block) supporting "Skip all" and tenth-of-a-second skipping granularity.
 - [ ] **Agent Action**: Implement visual states: color blocks red (fully skipped) and orange (partially), and show a red overlay during playback for skipped stretches. Highlight the active second block with a yellow border.
+- [ ] **Validation**: Execute Journey 3 (Editing Studio) using the execute-and-report-journey skill.
 
 ### Step 4: Publishing
 - [ ] **Agent Action**: Implement video preview that plays without skipped sections.
 - [ ] **Agent Action**: Implement export triggering native Photo App save or external share sheet.
+- [ ] **Validation**: Execute Journey 4 (Publishing) using the execute-and-report-journey skill.
 
 ### Step 5: Archives
 - [ ] **Agent Action**: Create an Archives screen listing archived scripts.
 - [ ] **Agent Action**: Implement a Restore operation setting the restored project as active and routing the user to the appropriate studio step (e.g. Recording Studio).
+- [ ] **Validation**: Execute Journey 5 (Archives) using the execute-and-report-journey skill.
 
 ## Phase 5: The Final Cut
 Goal: Cleanup, polish, and optimization.
 
 - [ ] **Agent Action**: Final check for hardcoded values.
 - [ ] **Agent Action**: Remove debug logs.
-- [ ] **Validation**: Full end-to-end regression validation.
+- [ ] **Validation**: Execute Final End-to-End Regression Journey using the execute-and-report-journey skill.
 ```
 
 ## Execution Protocol

@@ -168,8 +168,6 @@ To efficiently extend this codebase:
 * **CRITICAL**: Always begin your response with the current active Phase and Step (if present) from `kmp-baseline-guide-local` formatted exactly like either `[Phase X - Step Y]` or `[Phase X - Step Y.Z]` or `[Phase X]`. You determine the active phase and step by finding the first unchecked `- [ ]` task in `kmp-baseline-guide-local` and looking at its parent headers.
 * **STOP ON USER ACTIONS**: You must process the `kmp-baseline-guide-local` strictly sequentially. If the next unchecked item in the guide is a User Action, you MUST STOP execution, explicitly prompt the user to complete that action, and wait for their confirmation. Do NOT proceed to subsequent Agent Actions or Validations until the user confirms the step is done.
 
-* **CRITICAL Validation Rule**: You are strictly forbidden from checking off a `**Validation**` task in the guide unless you have physically run the `execute-and-report-journey` skill, captured the screenshots, and verified the generated `report.md` exists on disk. Never simulate or assume a validation step.
-
 ## Skills & Best Practices
 For more specific technical guidance (e.g., creating run configs, working with Room, Navigation, and complex Video Playback components like `AndroidView` and iOS Sandbox UUID resolution), heavily refer to the `.skills/planning-skills/kmp-baseline/kmp-baseline-hints-local/SKILL.md` (or `../kmp-baseline-hints-blueprint/SKILL.md` templates). It contains vital workarounds for multiplatform video clipping and rendering.
 ```

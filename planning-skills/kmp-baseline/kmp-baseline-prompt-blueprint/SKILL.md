@@ -46,3 +46,7 @@ Please follow these exact steps sequentially. Do not start executing the actual 
    Finally, use the instructions in `../kmp-baseline-agent-blueprint/SKILL.md` to create or update an `AGENTS.md` file in the root directory that has agent instructions that prevent the agent from making mistakes. As we work with this project, we will continue to add more instructions to `AGENTS.md` to keep the agent working smoothly with this project.
 
 Once you have created all the files in the parent `kmp-baseline` directory, delete all blueprint folders (directories ending in `-blueprint` adjacent to this prompt) from that same `kmp-baseline` directory, let me know, and we will begin executing Phase 1 from the `kmp-baseline-guide-local`.
+
+## Execution & Validation Rules
+When we begin executing `kmp-baseline-guide-local`, you must strictly adhere to the following rules:
+* **CRITICAL Validation Rule**: You are strictly forbidden from checking off a `**Validation**` task in the guide unless you have physically run the `execute-and-report-journey` skill, captured the screenshots, and verified the generated `report.md` exists on disk. Never simulate or assume a validation step.
