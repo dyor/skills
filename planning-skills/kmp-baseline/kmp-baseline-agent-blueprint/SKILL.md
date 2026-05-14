@@ -59,42 +59,27 @@ The heart of the application. It is consumed by all other platform-specific modu
 *   **Solution**: Use Kotlin Multiplatform's `BuildConfig` capabilities combined with `local.properties`.
 
 1.  **Gradle Setup (`shared/build.gradle.kts`):**
-    Ensure `buildConfig` plugin is applied and configured.
+    Ensure `buildConfig` plugin is applied and configured. Use the complete block from `kmp-baseline-hints-blueprint` instead of scattered fragments to avoid Kotlin DSL syntax errors.
     ```kotlin
+    import java.util.Properties
+
+    val localProperties = Properties()
+    val localPropertiesFile = rootProject.file("local.properties")
+    if (localPropertiesFile.exists()) {
+        localProperties.load(localPropertiesFile.inputStream())
+    }
+    val geminiApiKey = localProperties.getProperty("GEMINI_API_KEY") ?: ""
+
     plugins {
         // ...
-        id("com.github.gmazzo.buildconfig").version("3.1.0") // Or the latest version
+        id("com.github.gmazzo.buildconfig")
     }
 
     // ... inside kotlin { ... } block
-    sourceSets {
-        commonMain.dependencies {
-            // ...
-        }
-        androidMain.dependencies {
-            // ...
-        }
-        iosMain.dependencies {
-            // ...
-        }
-    }
-
+    
     buildConfig {
-        // Common configuration for all source sets
-        packageName.set("org.example.project") // Your base package name
-        commonMain {
-            // Define build config fields common to all platforms
-            buildConfigField("String", "GEMINI_API_KEY", "\"${System.getenv("GEMINI_API_KEY")}\"")
-            // You can also read from local.properties for development
-            // buildConfigField("String", "GEMINI_API_KEY", ""${project.findProperty("GEMINI_API_KEY") ?: ""}"")
-        }
-        // Platform-specific overrides if needed (e.g., for different API keys)
-        androidMain {
-            // android-specific BuildConfig fields
-        }
-        iosMain {
-            // ios-specific BuildConfig fields
-        }
+        buildConfigField("String", "GEMINI_API_KEY", "\"$geminiApiKey\"")
+        packageName("org.example.project")
     }
     ```
 
@@ -150,6 +135,7 @@ The heart of the application. It is consumed by all other platform-specific modu
     *   Embeds the shared code as a framework (`Shared.framework`).
     *   Entry point: `iOSApp.swift` (typically).
     *   **Run:** Open `iosApp/iosApp.xcodeproj` in Xcode and run on a Simulator/Device.
+    *   **NO IOS BUILDS RULE**: By default, do NOT attempt to build iOS targets (e.g. `linkReleaseFrameworkIosSimulatorArm64`) during rapid iteration to avoid long compile times and potential linkage errors. Rely on `:androidApp:assembleDebug` for continuous verification unless the user explicitly requests an iOS build.
 
 ## Dependency Management
 *   Dependencies are managed in `gradle/libs.versions.toml`.
@@ -181,6 +167,8 @@ To efficiently extend this codebase:
 * Ensure that the `kmp-baseline-guide-local` periodically invokes `.skills/planning-skills/kmp-baseline/kmp-baseline-calculator-local/SKILL.md` to determine how complete the project is.
 * **CRITICAL**: Always begin your response with the current active Phase and Step (if present) from `kmp-baseline-guide-local` formatted exactly like either `[Phase X - Step Y]` or `[Phase X - Step Y.Z]` or `[Phase X]`. You determine the active phase and step by finding the first unchecked `- [ ]` task in `kmp-baseline-guide-local` and looking at its parent headers.
 * **STOP ON USER ACTIONS**: You must process the `kmp-baseline-guide-local` strictly sequentially. If the next unchecked item in the guide is a User Action, you MUST STOP execution, explicitly prompt the user to complete that action, and wait for their confirmation. Do NOT proceed to subsequent Agent Actions or Validations until the user confirms the step is done.
+
+* **CRITICAL Validation Rule**: You are strictly forbidden from checking off a `**Validation**` task in the guide unless you have physically run the `execute-and-report-journey` skill, captured the screenshots, and verified the generated `report.md` exists on disk. Never simulate or assume a validation step.
 
 ## Skills & Best Practices
 For more specific technical guidance (e.g., creating run configs, working with Room, Navigation, and complex Video Playback components like `AndroidView` and iOS Sandbox UUID resolution), heavily refer to the `.skills/planning-skills/kmp-baseline/kmp-baseline-hints-local/SKILL.md` (or `../kmp-baseline-hints-blueprint/SKILL.md` templates). It contains vital workarounds for multiplatform video clipping and rendering.

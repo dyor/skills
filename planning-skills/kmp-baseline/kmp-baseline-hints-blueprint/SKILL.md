@@ -42,8 +42,8 @@ Follow the step-by-step guidance, conventions, and patterns below when extending
 *   **Problem**: Text-based Emojis (e.g., 💣, 🚩) rely on system fonts which may not render consistently.
 *   **Solution**:
     *   **Preferred**: Use `Canvas` drawing for simple shapes (Circles, Flags). It guarantees consistent rendering across all platforms.
-    *   **Alternative**: Use `compose-material-icons-extended` dependency for standard icons (`Icons.Filled.*`).
-    *   **Avoid**: Relying solely on Text Emojis for critical UI elements.
+    *   **Alternative**: Use text characters (like `<`, `▶`, `↓`) for simple arrows and icons during prototyping.
+    *   **Avoid**: Do NOT use `compose-material-icons-extended` dependency in KMP projects unless you have explicitly configured it to resolve across all targets, as it frequently causes "Unresolved reference" linkage errors in `shared` modules. Rely on standard Compose Resources for SVGs, or simple text symbols to avoid KMP dependency resolution hell.
 
 ### Keyboard Management (iOS & Android)
 *   **Problem**: Multi-line text inputs (like `OutlinedTextField`) keep the software keyboard open when clicking outside of them, which can block vital UI buttons (e.g., Save, Next) at the bottom of the screen. This is particularly noticeable on iOS.
@@ -357,12 +357,10 @@ actual fun getInMemoryDatabase(): AppDatabase {
     *   **Problem**: Securely injecting API keys (e.g., `GEMINI_API_KEY`) into a Kotlin Multiplatform project so they are available at compile time across all targets, without being hardcoded or committed to version control.
     *   **Solution**: Utilize the `com.github.gmazzo.buildconfig` plugin and load `local.properties` directly in your `shared` module's build script.
         1.  **`local.properties`**: Store your API key in `local.properties` (e.g., `GEMINI_API_KEY="your_api_key_here"`). This file should be `.gitignored`. **Ensure the value is wrapped in quotes.**
-        2.  **`shared/build.gradle.kts`**: **Load the properties directly at the top of this file**, and then configure the `buildConfig` block. **Do NOT try to load this via `settings.gradle.kts` `rootProject.extra` as it commonly causes Kotlin DSL resolution errors for agents.**
+        2.  **`shared/build.gradle.kts`**: Use the following complete, copy-pasteable block at the very top of `shared/build.gradle.kts` to prevent Kotlin DSL syntax errors:
             ```kotlin
-            import org.jetbrains.kotlin.gradle.dsl.JvmTarget
             import java.util.Properties
 
-            // Load local.properties for API keys directly in this build script
             val localProperties = Properties()
             val localPropertiesFile = rootProject.file("local.properties")
             if (localPropertiesFile.exists()) {
@@ -371,15 +369,57 @@ actual fun getInMemoryDatabase(): AppDatabase {
             val geminiApiKey = localProperties.getProperty("GEMINI_API_KEY") ?: ""
 
             plugins {
-                // ... other plugins ...
-                alias(libs.plugins.buildConfig) // Ensure this plugin is applied
+                alias(libs.plugins.kotlinMultiplatform)
+                alias(libs.plugins.androidLibrary)
+                alias(libs.plugins.composeMultiplatform)
+                alias(libs.plugins.composeCompiler)
+                id("com.github.gmazzo.buildconfig") // Ensure this plugin is applied
             }
 
-            // ... other configurations ...
+            kotlin {
+                androidTarget {
+                    compilations.all {
+                        kotlinOptions {
+                            jvmTarget = "17"
+                        }
+                    }
+                }
+                
+                listOf(
+                    iosX64(),
+                    iosArm64(),
+                    iosSimulatorArm64()
+                ).forEach { iosTarget ->
+                    iosTarget.binaries.framework {
+                        baseName = "Shared"
+                        isStatic = true
+                    }
+                }
+
+                sourceSets {
+                    commonMain.dependencies {
+                        implementation(compose.runtime)
+                        implementation(compose.foundation)
+                        implementation(compose.material3)
+                        implementation(compose.ui)
+                        implementation(compose.components.resources)
+                        implementation(compose.components.uiToolingPreview)
+                    }
+                }
+            }
+
+            android {
+                namespace = "org.example.project.shared"
+                compileSdk = 35
+                compileOptions {
+                    sourceCompatibility = JavaVersion.VERSION_17
+                    targetCompatibility = JavaVersion.VERSION_17
+                }
+            }
 
             buildConfig {
-                buildConfigField("String", "GEMINI_API_KEY", geminiApiKey)
-                packageName("org.example.project.shared") // Set your common module's package name
+                buildConfigField("String", "GEMINI_API_KEY", "\"$geminiApiKey\"")
+                packageName("org.example.project") // Matches your common app package
             }
             ```
     *   **Usage in Common Kotlin Code**: Access the API key via `BuildConfig.GEMINI_API_KEY`.
@@ -433,17 +473,17 @@ actual fun getInMemoryDatabase(): AppDatabase {
     5.  **Kotlin to Swift Interop Warning (CRITICAL)**: **NEVER** name a shared Kotlin function `init()` if it will be called from Swift (e.g., `fun init()`). Swift uses `init` exclusively for object constructors, leading to the compiler error `'init' is a member of the type; use 'type(of: ...)'`. Always use a name like `initialize()`.
 
 #### Gemini API Configuration
-*   **Problem**: Encountering 400/404 Client Errors ("No candidates received" or model/method not supported) when using older or deprecated Gemini models.
-*   **Solution**: Ensure you are using the correct endpoint URL and payload structure for the specific model. The `v1beta` endpoint for `gemini-3.1-flash-lite` requires a very specific `contents` array structure. You MUST use the most up-to-date stable model version as older ones (like `gemini-2.0-flash` or `gemini-2.5-flash`) may be deprecated or restricted.
+*   **Problem**: Encountering 400/404/403/503 Client Errors ("No candidates received" or model/method not supported) when using older or deprecated Gemini models.
+*   **Solution**: Ensure you are using the correct endpoint URL and payload structure for the specific model. The `v1beta` endpoint for `gemini-3.1-flash-lite` requires a very specific `contents` array structure. You MUST use the most up-to-date stable model version. **Use `gemini-3.1-flash-lite` as the default stable model for text generation.**
     *   **Endpoint**: `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=$apiKey`
     *   **JSON Structure**: 
         ```json
         { "contents": [ { "parts": [ { "text": "Your prompt here" } ] } ] }
         ```
-*   **CRITICAL AGENT INSTRUCTION: Confirming the Latest Gemini Model Version**:
-    *   Gemini models are updated and deprecated rapidly. If you encounter a "model not found", "method not supported", or HTTP 400/404 error, **do NOT assume the version identifier is correct.**
-    *   You MUST query the available models list using the `ListModels` API endpoint to retrieve the exact active model strings.
+*   **CRITICAL AGENT INSTRUCTION: Pre-flight Curl Check**:
+    *   Before implementing the Gemini Service, you should use a `curl` command with the injected API key to verify the model availability and connection.
     *   **Query Command**: `curl -s "https://generativelanguage.googleapis.com/v1beta/models?key=$apiKey"`
+    *   If you encounter a "model not found", "method not supported", or HTTP 400/404 error during implementation, do NOT assume the version identifier is correct. Use the curl command above to retrieve the exact active model strings.
     *   Alternatively, consult the official model list page at `https://ai.google.dev/gemini-api/docs/models/gemini` using your browser/web-reading tools to find active stable/preview model strings.
     *   Once confirmed, update your HTTP client request URL with the verified model name (e.g. `gemini-3.1-flash-lite` or latest stable/preview version).
 
