@@ -3,6 +3,8 @@ name: kmp-baseline-validation-blueprint
 description: Tracks the validation of explicitly defined end-to-end user journeys in the application.
 ---
 
+> [!WARNING] This is an immutable blueprint template that is used to build the active plans. Do not execute or edit this file directly while writing code for this codebase - only for building the active plans. For active execution, use .skills/planning-skills/
+
 # User Journey Validation
 
 This document contains a rigorous, multi-layered testing plan tailored precisely to the actual end-state functionality of the application. Journeys represent the final shipping product, not intermediate development steps (e.g., validating a navigation graph with empty placeholder screens).

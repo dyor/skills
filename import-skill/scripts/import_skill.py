@@ -451,7 +451,7 @@ def _resolve_dest_dir(url: str, base_skills_dir: Path, given_name: str) -> tuple
 
     if is_planning_skill:
         rel_path = "/".join(path_parts[planning_index + 1:])
-        dest_dir = base_skills_dir / "planning-skills" / rel_path
+        dest_dir = base_skills_dir / "imported-skills" / "planning-skills" / rel_path
         name = path_parts[-1]
     else:
         name = given_name
@@ -529,7 +529,7 @@ def run_import(url: str, base_skills_dir: Path, given_name: str, overwrite: bool
         readme_path = dest_dir / "README.md"
         if not readme_path.exists():
             curr = dest_dir.parent
-            while curr and curr != base_skills_dir / "planning-skills" and curr != base_skills_dir:
+            while curr and curr != base_skills_dir / "imported-skills" / "planning-skills" and curr != base_skills_dir:
                 if (curr / "README.md").exists():
                     readme_path = curr / "README.md"
                     break

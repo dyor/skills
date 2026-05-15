@@ -6,7 +6,7 @@ description: Consumer-side. Imports a remote skill (single or collection) into t
 # Skill: Import Remote Skill
 
 ## Overview
-This skill fetches a remote skill (or collection) from a URL and installs it. Single items go to `.skills/imported-skills`, and planning skills go to `.skills/planning-skills/`. Everything imported is tracked inside `.skills/IMPORTED-SKILLS.md`.
+This skill fetches a remote skill (or collection) from a URL and installs it. Single items go to `.skills/imported-skills`, and planning skills go to `.skills/imported-skills/planning-skills/`. Everything imported is tracked inside `.skills/IMPORTED-SKILLS.md`.
 
 ## Execution Protocol
 
@@ -22,7 +22,7 @@ This skill fetches a remote skill (or collection) from a URL and installs it. Si
    - If User says "overwrite", run the command again with `--overwrite`.
 4. Report success, including the commit hash documented in `IMPORTED-SKILLS.md`.
 5. **If the imported skill is a planning-skill**:
-   - Immediately read the `README.md` file located at the root of the imported planning-skill directory (e.g. `.skills/planning-skills/<name>/README.md`).
+   - Immediately read the `README.md` file located at the root of the imported planning-skill directory (e.g. `.skills/imported-skills/planning-skills/<name>/README.md`).
    - Tell the User: "I have successfully imported the planning skill. I am now reading its README.md to understand the kickoff instructions."
    - Do NOT attempt to execute, prompt, or run any blueprint skills or guides until you have read the `README.md` first and followed its onboarding steps.
 

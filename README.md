@@ -32,7 +32,7 @@ The `import-skill` logic is sophisticated enough to detect when you are importin
 Ask your agent:
 > "Please import the planning skill from `https://github.com/dyor/skills/tree/main/tasks/kmp-baseline`." or you can use the Dyor Knowledge Base that you installed above and say "Lets install and run the kmp-baseline planning skill from  @dyor-knowledge-base.\"
 
-Instead of flattening the downloaded files into generic folders, the importer carefully re-assembles the entire nested tree structure locally inside your `.skills/planning-skills/kmp-baseline/` directory. By actively preserving the root folder structures, internal planning skills blueprints can safely use relative paths (e.g., `../kmp-baseline-hints-blueprint/SKILL.md`) to execute their sibling prompts flawlessly. 
+Instead of flattening the downloaded files into generic folders, the importer carefully re-assembles the entire nested tree structure locally inside your `.skills/imported-skills/planning-skills/kmp-baseline/` directory. By actively preserving the root folder structures, internal planning skills blueprints can safely use relative paths (e.g., `../kmp-baseline-hints-blueprint/SKILL.md`) to execute their sibling prompts flawlessly. 
 
 ## 3. Best Practices for Skill Authors
 

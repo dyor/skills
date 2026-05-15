@@ -3,13 +3,15 @@ name: kmp-baseline-guide-blueprint
 description: The central source of truth for planning, tracking progress, and orchestrating work between the AI Agent and the User in this codebase.
 ---
 
+> [!WARNING] This is an immutable blueprint template that is used to build the active plans. Do not execute or edit this file directly while writing code for this codebase - only for building the active plans. For active execution, use .skills/planning-skills/
+
 # Skill: Project Orchestration via kmp-baseline-guide-local/SKILL.md
 
 ## Overview
 This re-usable skill provides the structure and instructions for an AI Agent to generate, maintain, and execute a `kmp-baseline-guide-local/SKILL.md` file specific to the user's codebase. The `kmp-baseline-guide-local/SKILL.md` is the central source of truth for planning, tracking progress, and orchestrating work between the AI Agent and the User in a codebase during a buildout of a baseline KMP project (e.g., adding baseline KMP cababilities to a KMP template).
 
 ## Materialization Instructions for Generating a New `kmp-baseline-guide-local`
-When placed in a new codebase and asked to create a `kmp-baseline-guide-local/SKILL.md`, create the file at `.skills/planning-skills/kmp-baseline/kmp-baseline-guide-local/SKILL.md`. Ask for details on the project requirements and generate the document following this exact structure.
+When placed in a new codebase and asked to create a `kmp-baseline-guide-local/SKILL.md`, create the file at `.skills/planning-skills/kmp-baseline-local/kmp-baseline-guide-local/SKILL.md`. Ask for details on the project requirements and generate the document following this exact structure.
 
 Also, copy the contents of the blueprint's `resources/` folder to the materialized local's `resources/` folder to make assets available to the task runner (this is done automatically during materialization by the agent).
 
@@ -25,7 +27,7 @@ Within each phase, define numbered steps with specific checklist items.
 Prefix each task with the responsible party to ensure clear separation of duties:
 *   `**User Action**:` For manual steps the human must take (e.g., running `git init`, testing on a physical device, adding visual assets, creating external accounts).
 *   `**Agent Action**:` For code generation, refactoring, build configuration, and file modifications the AI will perform.
-*   `**Validation**:` A reserved step explicitly triggering the execution of specific user journeys defined in `.skills/planning-skills/kmp-baseline/kmp-baseline-validation-local/SKILL.md`. This represents an important end-to-end journey that the agent and the user are going to confirm is working and track.
+*   `**Validation**:` A reserved step explicitly triggering the execution of specific user journeys defined in `.skills/planning-skills/kmp-baseline-local/kmp-baseline-validation-local/SKILL.md`. This represents an important end-to-end journey that the agent and the user are going to confirm is working and track.
 
 ### 4. Tracking State
 Use Markdown checkboxes as bulleted lists to track state, which ensures they render on separate lines. All new tasks should start as `- [ ]`. When completed, update the document to `- [x]`.
@@ -57,6 +59,7 @@ Goal: Initialize the stack, clean targets, and establish core dependencies and t
 ### Step 3: Dependencies & Permissions
 - [ ] **Agent Action**: Configure `build.gradle.kts` with Room, Ktor, Compose Navigation 3, Calf permissions, and Gemini dependencies.
 - [ ] **Agent Action**: Add `<uses-permission android:name="android.permission.INTERNET" />` to `androidApp/src/main/AndroidManifest.xml` to enable network access.
+- [ ] **Agent Action**: Populate `local.properties` with `GEMINI_API_KEY`. Before asking the user for the key, check available local skills in `.skills/` to see if there is a tool/skill that can automatically provide or retrieve the Gemini API key. If found, execute that skill. Otherwise, prompt the user for the key.
 - [ ] **User Action**: Confirm that the project builds and runs.
 
 ## Phase 2: Baseline Validation (The Joke App)
@@ -75,8 +78,8 @@ Goal: Implement a minimal feature set to validate all core libraries working tog
 Goal: Transition from the baseline app to the product, applying styles and branding.
 
 ### Step 1: Aesthetic & Branding
-- [ ] **Agent Action**: Copy `film_noir.png` to resources.
-- [ ] **Agent Action**: Set `film_noir.png` as background image.
+- [ ] **Agent Action**: Copy `film_noir.png` from `.skills/planning-skills/kmp-baseline-local/kmp-baseline-guide-local/resources/film_noir.png` into the project's shared resources directory (`shared/src/commonMain/composeResources/drawable/film_noir.png`).
+- [ ] **Agent Action**: Set `film_noir.png` as background image in the core UI composable.
 - [ ] **Agent Action**: Override the clean baseline Material theme with the high-contrast Film Noir colors (e.g., overriding purple/greys with cinematic darks and golds as seen in reference codebase).
 - [ ] **Agent Action**: Rebrand the app (string resources, icons).
 - [ ] **Validation**: Execute Aesthetic & Branding Journey using the execute-and-report-journey skill.
@@ -137,4 +140,4 @@ When the User says "Execute" or "Continue with the guide":
     -   Update the guide file, changing the `- [ ]` to `- [x]` for the completed task.
     -   Move on to the next task or pause if the next task requires the User.
 4.  **STOP ON USER ACTIONS**: You must process the `kmp-baseline-guide-local` strictly sequentially. If the next unchecked item in the guide is a User Action, you MUST STOP execution, explicitly prompt the user to complete that action, and wait for their confirmation. Do NOT proceed to subsequent Agent Actions or Validations until the user confirms the step is done.
-5.  Periodically, at the end of a session or after major milestones, run the instructions in `.skills/planning-skills/kmp-baseline/kmp-baseline-calculator-local/SKILL.md` to update the progress tracking and keep it up to date.
+5.  Periodically, at the end of a session or after major milestones, run the instructions in `.skills/planning-skills/kmp-baseline-local/kmp-baseline-calculator-local/SKILL.md` to update the progress tracking and keep it up to date.

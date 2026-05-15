@@ -25,12 +25,16 @@ Once the developer provides the name (referred to below as `<planning-skill-name
 - `<planning-skill-name>-hints-blueprint/examples/`
 
 ### Step 3: Scaffold Blueprint SKILL.md Files
-Create a `SKILL.md` file inside each of the 6 directories you just created. Use the following specifications to generate their content dynamically:
+Create a `SKILL.md` file inside each of the 6 directories you just created. Ensure that every scaffolded blueprint `SKILL.md` file begins with the following warning banner directly below the YAML front-matter:
+
+> [!WARNING] This is an immutable blueprint template that is used to build the active plans. Do not execute or edit this file directly while writing code for this codebase - only for building the active plans. For active execution, use .skills/planning-skills/
+
+Use the following specifications to generate their content dynamically:
 
 #### 1. `<planning-skill-name>-prompt-blueprint`
-**Purpose**: The entry point skill that tells the agent how to localize the blueprints into the developer's local `.skills/` directory.
+**Purpose**: The entry point skill that tells the agent how to localize the blueprints into the developer's local `.skills/planning-skills/<planning-skill-name>-local/` directory.
 **Content Requirements**:
-- Write a prompt instructing the agent to sequentially read the sibling blueprints using relative paths (e.g., `../<planning-skill-name>-guide-blueprint/SKILL.md`) and generate their local, codebase-specific `-local` equivalents (e.g., `.skills/<planning-skill-name>-guide-local/SKILL.md`).
+- Write a prompt instructing the agent to sequentially read the sibling blueprints using relative paths (e.g., `../<planning-skill-name>-guide-blueprint/SKILL.md`) and generate their local, codebase-specific `-local` equivalents inside a completely new directory called `.skills/planning-skills/<planning-skill-name>-local/` (e.g., `.skills/planning-skills/<planning-skill-name>-local/<planning-skill-name>-guide-local/SKILL.md`).
 - It must instruct the agent to prompt the host developer for specific variables needed to populate the local guides/hints (similar to soliciting the "App Name" and "Target Audience" in `kmp-baseline`).
 
 #### 2. `<planning-skill-name>-agent-blueprint`
@@ -70,7 +74,7 @@ Create a `README.md` file inside the root of `.skills/planning-skills/<planning-
 **Purpose**: Provide clear documentation to developers and agents on what this planning skill is all about and how to kick it off.
 **Content Requirements**:
 - **Overview of the Collection**: Explain that this is a highly orchestrated planning skill composed of multiple blueprints (Prompt, Agent, Guide, Calculator, Validation, Hints).
-- **Kick-Off Instructions**: Explicitly instruct developers or agents on how to kick off the planning skill using the prompt blueprint (e.g. running the orchestrator instructions inside `<planning-skill-name>-prompt-blueprint/SKILL.md`).
+- **Kick-Off Instructions**: Explicitly instruct developers or agents on how to kick off the planning skill using the prompt blueprint (e.g. running the orchestrator instructions inside `.skills/imported-skills/planning-skills/<planning-skill-name>/<planning-skill-name>-prompt-blueprint/SKILL.md`).
 - **Workflow Components**: Outline and describe each blueprint included in the collection so that developers understand what is scaffolded.
 
 ---
