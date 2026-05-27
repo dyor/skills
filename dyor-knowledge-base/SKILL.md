@@ -1,6 +1,7 @@
 ---
 name: dyor-knowledge-base
 description: A summary of all names and descriptions of skills in the dyor/skills repository, used to guide importing relevant skills.
+version: 1.1.0
 ---
 
 # Skill: dyor-knowledge-base
@@ -12,6 +13,10 @@ This skill acts as a repository of knowledge about available skills in the `dyor
 
 ### Standalone Skills
 
+- **`bootstrap-kmp-template`**
+  - **Description**: Bootstraps a new KMP project by cloning a specified GitHub template repository into a new directory, seeding it with core AI skills, stripping its git history, and initializing a fresh workspace.
+  - **URL**: `https://github.com/dyor/skills/tree/main/bootstrap-kmp-template`
+
 - **`compose-migration-hints`**
   - **Description**: A collection of architectural, UI, and workflow guidelines learned from migrating to Android using Jetpack Compose, Room, Koin, and Maps.
   - **URL**: `https://github.com/dyor/skills/tree/main/compose-migration-hints`
@@ -20,10 +25,6 @@ This skill acts as a repository of knowledge about available skills in the `dyor
   - **Description**: Scaffolds a complete 6-part Planning Skill (Prompt, Agent, Guide, Calculator, Validation, Hints) inside the remote `.skills/planning-skills/` directory for authoring a new chunk of orchestrated work.
   - **URL**: `https://github.com/dyor/skills/tree/main/create-planning-skill`
 
-- **`dyor-knowledge-base`**
-  - **Description**: A summary of all names and descriptions of skills in the dyor/skills repository, used to guide importing relevant skills.
-  - **URL**: `https://github.com/dyor/skills/tree/main/dyor-knowledge-base`
-
 - **`execute-and-report-journey`**
   - **Description**: Executes a Journey test, validates UI, captures screenshots, and maintains a live Markdown report of its progress with Before/After image comparisons.
   - **URL**: `https://github.com/dyor/skills/tree/main/execute-and-report-journey`
@@ -31,6 +32,10 @@ This skill acts as a repository of knowledge about available skills in the `dyor
 - **`generate-code-review`**
   - **Description**: Generates a comprehensive Markdown Change Review document by aggregating journey reports, grading contexts, key architectural decisions, and a pre-publishing checklist. Features optional Git integration and scope-based historical summaries.
   - **URL**: `https://github.com/dyor/skills/tree/main/generate-code-review`
+
+- **`implement-native-firebase-kmp`** (Experimental)
+  - **Description**: Guides the implementation of Firebase in a KMP project using native platform SDKs (Android/iOS) via Interface Injection, avoiding third-party KMP wrappers. *Note: Experimental/untested.*
+  - **URL**: `https://github.com/dyor/skills/tree/main/implement-native-firebase-kmp`
 
 - **`import-skill`**
   - **Description**: Imports a remote skill (single or collection) into the local `.skills/imported-skills` folder using a Python script. Can also refresh all skills.

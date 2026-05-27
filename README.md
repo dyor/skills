@@ -18,7 +18,7 @@ Once the `import-skill` is in your codebase, you can prompt your AI agent to dow
 
 **Example: Importing the Dyor Knowledge Base**
 Ask your agent:
-> "Please import the skill located at `https://github.com/dyor/skills/tree/main/dyor-knowledge-base`."
+> Please import the skill located at `https://github.com/dyor/skills/tree/main/dyor-knowledge-base`.
 
 The agent will automatically pull down the repository code and unpack it into your project exactly at `.skills/imported-skills/dyor-knowledge-base/`. Simultaneously, it generates a ledger at `.skills/IMPORTED-SKILLS.md` keeping track of the GitHub commit hash, URL, and timestamp so you always know exactly what version of a skill you downloaded (and when to download a new one).
 
@@ -29,8 +29,14 @@ While basic skills are singular and targetted, a **Planning Skill** is a complex
 The `import-skill` logic is sophisticated enough to detect when you are importing a planning skill bundle based on the `/planning-skill/` URL structure.
 
 **Example: Importing the KMP Baseline Task**
+
+**Option 1: Direct Import via URL**
 Ask your agent:
-> "Please import the planning skill from `https://github.com/dyor/skills/tree/main/tasks/kmp-baseline`." or you can use the Dyor Knowledge Base that you installed above and say "Lets install and run the kmp-baseline planning skill from  @dyor-knowledge-base.\"
+> Please import the planning skill from `https://github.com/dyor/skills/tree/main/planning-skills/kmp-baseline`.
+
+**Option 2: Dynamic Import via Knowledge Base**
+If you have installed the Dyor Knowledge Base, you can simply ask your agent:
+> Lets install and run the kmp-baseline planning skill from @dyor-knowledge-base.
 
 Instead of flattening the downloaded files into generic folders, the importer carefully re-assembles the entire nested tree structure locally inside your `.skills/imported-skills/planning-skills/kmp-baseline/` directory. By actively preserving the root folder structures, internal planning skills blueprints can safely use relative paths (e.g., `../kmp-baseline-hints-blueprint/SKILL.md`) to execute their sibling prompts flawlessly. 
 
@@ -43,6 +49,6 @@ When an end-user runs `import-skill` on your repository, the script automaticall
 This is where the **`update-importable-skill`** utility comes into play. 
 
 Before you `git push` a brand new skill (or a massive update) to your GitHub repository, you can prompt your agent to invoke this utility to standardize your files:
-> "Run the update-importable-skill against my `journey-writing-skill`. Bump the `version` from 1.0.0 to 1.1.0 and update the `description` to match the revised functionality."
+> Run the update-importable-skill against my `journey-writing-skill`. Bump the `version` from 1.0.0 to 1.1.0 and update the `description` to match the revised functionality.
 
 The AI will safely parse the YAML `<--- --->` front-matter block at the top of your `SKILL.md` (or iterate across a massive array of files in a task bundle) and inject or bump the custom fields without disturbing your core markdown instructions. This guarantees your distributed tools will look great, behave cleanly, and be universally readable by any other AI agent working in an imported environment.
