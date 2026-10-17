@@ -1,7 +1,7 @@
 ---
 name: dyor-knowledge-base
 description: A summary of all names and descriptions of skills in the dyor/skills repository, used to guide importing relevant skills.
-version: 1.2.0
+version: 1.3.0
 ---
 
 # Skill: dyor-knowledge-base
@@ -56,6 +56,10 @@ This skill acts as a repository of knowledge about available skills in the `dyor
 - **`multi-project-skill`**
   - **Description**: Central utility skill to resolve environment paths ($USER_HOME, $PROJECT_HOME) and share agentic capabilities across multiple local Android Studio projects.
   - **URL**: `https://github.com/dyor/skills/tree/main/multi-project-skill`
+
+- **`skills-repo-sync`**
+  - **Description**: Author-side. Sets up your own GitHub skills repo for two-way sync across machines: a local clone, linked into `~/.agents/skills` (and Claude/Gemini) by the repo's `install.sh`, synced with plain git. Covers new machines, retiring and renaming skills.
+  - **URL**: `https://github.com/dyor/skills/tree/main/skills-repo-sync`
 
 - **`update-importable-skill`**
   - **Description**: A utility skill to programmatically update or bump the front-matter metadata (like version numbers) of existing SKILL.md files.

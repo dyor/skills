@@ -52,3 +52,19 @@ Before you `git push` a brand new skill (or a massive update) to your GitHub rep
 > Run the update-importable-skill against my `journey-writing-skill`. Bump the `version` from 1.0.0 to 1.1.0 and update the `description` to match the revised functionality.
 
 The AI will safely parse the YAML `<--- --->` front-matter block at the top of your `SKILL.md` (or iterate across a massive array of files in a task bundle) and inject or bump the custom fields without disturbing your core markdown instructions. This guarantees your distributed tools will look great, behave cleanly, and be universally readable by any other AI agent working in an imported environment.
+
+## 4. Maintaining These Skills Across Your Machines (Authors)
+
+Importing (sections 1 and 2) copies a pinned version of a skill into one project. If you *write* skills and use them everywhere, keep a clone of your skills repo and link it into your agents instead, so the clone is the live copy and git keeps your machines in sync:
+
+```bash
+git clone https://github.com/dyor/skills.git ~/code/skills   # anywhere outside a skills folder
+~/code/skills/install.sh                                       # link every skill into your agents
+```
+
+`install.sh` links each top-level folder that contains a `SKILL.md` into `~/.agents/skills`, plus `~/.claude/skills` and `~/.gemini/config/skills` when those apps are installed. Edit skills in place, then `git commit` and `git push`. On your other machines, `git pull` and re-run `./install.sh` (it adds new skills and removes links to retired ones). To retire a skill, move it into `archive/`. `./install.sh --uninstall` removes every link into the clone.
+
+Don't clone the repo *into* `~/.agents/skills`: agents only find skills one level down, so every skill would be invisible.
+
+To set up the same pattern for your own skills repo, use the [`skills-repo-sync`](./skills-repo-sync) skill. It adds this `install.sh` to your repo and walks you through it.
+
