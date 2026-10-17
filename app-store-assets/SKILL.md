@@ -1,7 +1,7 @@
 ---
 name: app-store-assets
-description: Refresh an app's store and website assets from a pool of phone screenshots. Use when the user says "update screenshots", "update_screenshots", "refresh store screenshots", "new App Store / Play screenshots", "choose / reorder the screenshots", or asks to update store listing text or the app website's screenshots. File names pick which captures are published and in what order (1_home.png, 2_coach.png; extra_* are candidates). Produces captioned App Store and Google Play screenshots, checks listing text against store limits, and updates the website's screenshot gallery and copy. App-specific settings live in the app repo (distribution/assets.md), never in this skill.
-version: 1.1.0
+description: Refresh an app's store and website assets from a pool of phone screenshots. Use when the user says "update screenshots", "update_screenshots", "refresh store screenshots", "new App Store / Play screenshots", "choose / reorder the screenshots", or asks to update store listing text or the app website's screenshots. Today's capture folder is the working set; its file names pick what is published and in what order (1_home.png, 2_coach.png; extra_* are candidates). Older folders are history. Produces captioned App Store and Google Play screenshots, checks listing text against store limits, and updates the website's screenshot gallery and copy. App-specific settings live in the app repo (distribution/assets.md), never in this skill.
+version: 1.2.0
 ---
 
 # Skill: App Store Assets
@@ -24,25 +24,32 @@ Those live in the app repo's config file. When the user asks to change *this ski
 change the template for every app; when they want something different for one app,
 change that app's config.
 
-## The pool and its file names
+## The working set and its file names
 
 Raw captures live in dated folders, `<media_dir>/YYYY-MM-DD/` (default
-`distribution/media`). Together they are the pool, and **file names decide what is
-published**:
+`distribution/media`).
+
+- **The newest folder is the working set.** It holds the complete set being published,
+  and nothing outside it is published. `checklist` starts a new day's folder by copying
+  in the current published set, so the user only replaces what changed.
+- **Older folders are history.** Never rename, renumber or delete files in them. Every
+  shot in them is a candidate (unless the working set has the same id). To bring one
+  back, copy it into the working set under a new name.
+
+In the working set, **file names decide what is published**:
 
 | Name | Meaning |
 |---|---|
 | `1_<id>.png`, `2_<id>.png`, … | Published, left to right in number order. Gaps are fine (1, 2, 5); the stores get them renumbered 1, 2, 3. |
-| `extra_<id>.png` | A candidate: kept in the pool, not published. |
+| `extra_<id>.png` | A candidate: kept, not published. |
 | anything else (`IMG_1234.PNG`) | Unsorted: look at it and rename it. |
 
 - `<id>` is the rest of the name (`home_review_last_round`). It keys the shot's
-  caption in the config, and names the website image.
-- If an id appears in several folders, the **newest folder wins**. Re-shooting a
-  screen means saving it under the same name in today's folder.
-- **Select** an extra: rename `extra_<id>` to `<n>_<id>`. **Drop** a published shot:
-  rename `<n>_<id>` to `extra_<id>`. **Reorder:** change the numbers. Rename in the
-  folder that holds the newest copy of that id (`verify` shows it).
+  caption in the config, and names the website image. History files without a prefix
+  use their file name as the id.
+- **Replace** a screen: save over its file in the working set. **Select** a candidate:
+  copy it in as `<n>_<id>`. **Drop:** rename to `extra_<id>` (or delete the working
+  copy; history keeps the old one). **Reorder:** change the numbers in the working set.
 - Stores cap the count: App Store 10, Google Play 8 phone screenshots. The first two
   or three are the ones people see in search results.
 
@@ -58,7 +65,8 @@ If there is none, **bootstrap** it:
 2. Fill it in from the repo: the fastlane metadata folders (`*/appstore_metadata`,
    `*/playstore_metadata`), existing screenshots and their sizes, any existing screenshot
    script (port its captions and colours into `shots` and `style`), and the website.
-3. Move existing raw captures into a dated folder and name them by the scheme above.
+3. Copy the raw captures behind the current store screenshots into a dated folder,
+   named `1_<id>`, `2_<id>`, … in their store order. That folder is the first working set.
    Add `<media_dir>/contact-sheet.png` (written by `sheet`) to the app's `.gitignore`.
 4. Add one line to the app's `AGENTS.md` (create it if missing):
    `App store assets (screenshots, listing text, website gallery): see distribution/assets.md.`
@@ -75,29 +83,34 @@ is not at `distribution/assets.md`). It needs Pillow (`pip install Pillow`).
 
 ### 1. Ask for the captures
 
-Run `checklist`. It creates today's capture folder and writes `SHOTLIST.md` there: the
-published shots in order (with their file names, so re-shoots can reuse them), the
-extras, and the naming rules. Then tell the user, and **stop until they reply**:
+Run `checklist`. The first time on a given day it creates today's folder and copies the
+published set into it; either way it writes `SHOTLIST.md` there (the published shots
+in order, the candidates, and the naming rules). Then tell the user, and **stop until
+they reply**:
 
-> New captures go in `<folder>`; `SHOTLIST.md` there lists what's published now and the
-> naming rules. Re-shoot only the screens that changed, add any candidates, and tell me
-> when they're in.
+> Today's working set is `<folder>`: it starts with a copy of what's published now
+> (`SHOTLIST.md` lists it). Save new captures there, replacing the files for screens
+> that changed, and tell me when they're in.
+
+If the user hands you a screenshot directly (e.g. pasted into the chat), find the
+full-resolution original (Downloads, Desktop, AirDrop) rather than using a pasted copy,
+which is usually downscaled, and put it in the working set yourself.
 
 Pass along `capture_notes` from the config (device, data to load).
 
 ### 2. Sort the pool
 
 When the user says they're done:
-1. Run `verify`. For every **unsorted** file: open it, give it a short descriptive id,
-   and rename it `extra_<id>` (or `<n>_<id>` if it's clearly a re-shoot of a published
-   screen; ask if unsure). Anything that isn't an app screenshot (a photo, landscape)
-   also goes to `extra_`, and you mention it.
+1. Run `verify`. For every **unsorted** file in the working set: open it, give it a
+   short descriptive id, and rename it `extra_<id>`, or replace the published file if
+   it's clearly a re-shoot of that screen (ask if unsure). Anything that isn't an app
+   screenshot (a photo, landscape) also goes to `extra_`, and you mention it.
 2. Run `sheet`. It writes `<media_dir>/contact-sheet.png`: every shot with its label,
    the published ones outlined in order. Look at it yourself, then point the user to it.
 3. **Let the user choose.** Show the current order and the extras, and ask which to
    publish and in what order. Suggest an order if asked (strongest screens first), but
-   the user decides. Apply it by renaming files, then re-run `verify` until it reports
-   no problems.
+   the user decides. Apply it by renaming or copying files **in the working set only**,
+   then re-run `verify` until it reports no problems.
 4. Check every **new** or newly selected image:
    - Does it show what its `screen` description says?
    - Personal data: real names, emails, **coordinates or addresses**, notifications.
@@ -155,9 +168,9 @@ Store Connect or Google Play; that's the app's release tooling (fastlane
 
 | Command | Does |
 |---|---|
-| `checklist` | Creates today's capture folder and `SHOTLIST.md`; prints the folder. |
-| `verify` | Published shots in order, extras, unsorted files, with size checks. Fails on duplicate numbers, missing captions, an empty selection, or more shots than a store takes. |
-| `sheet` | Writes `<media_dir>/contact-sheet.png` of the whole pool, published shots outlined. |
+| `checklist` | Creates today's working set (seeded with the published set) and `SHOTLIST.md`; prints the folder. |
+| `verify` | The working set's published shots in order, candidates, unsorted files, with size checks. Fails on duplicate numbers, missing captions, an empty selection, or more shots than a store takes. |
+| `sheet` | Writes `<media_dir>/contact-sheet.png`: published shots outlined, then candidates. |
 | `compose` | Writes captioned screenshots for every entry in `outputs`. |
 | `web` | Writes website images; prints the `[{src, title, caption}]` list as JSON. |
 | `text` | Prints listing text lengths against App Store and Play limits. Fails if any is over. |
