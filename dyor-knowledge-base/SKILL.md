@@ -1,7 +1,7 @@
 ---
 name: dyor-knowledge-base
 description: A summary of all names and descriptions of skills in the dyor/skills repository, used to guide importing relevant skills.
-version: 1.1.0
+version: 1.2.0
 ---
 
 # Skill: dyor-knowledge-base
@@ -12,6 +12,10 @@ This skill acts as a repository of knowledge about available skills in the `dyor
 ## Available Skills
 
 ### Standalone Skills
+
+- **`app-store-assets`**
+  - **Description**: Refreshes an app's App Store and Google Play screenshots (captioned, at every store size), checks listing text against store limits, and updates the app website's screenshot gallery and copy, from one shot list. Say "update screenshots". App-specific settings live in the app repo's `distribution/assets.md`.
+  - **URL**: `https://github.com/dyor/skills/tree/main/app-store-assets`
 
 - **`bootstrap-kmp-template`**
   - **Description**: Bootstraps a new KMP project by cloning a specified GitHub template repository into a new directory, seeding it with core AI skills, stripping its git history, and initializing a fresh workspace.
