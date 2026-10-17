@@ -61,6 +61,10 @@ specific to this app lives here. Edit this file, not the skill.
 }
 ```
 
+`shots` is the caption library, keyed by id. What's published, and in what order, comes
+from the raw file names in the dated folders under `media_dir`: `1_home.png`,
+`2_main-feature.png` are published in that order; `extra_<id>.png` are candidates.
+
 Sizes: 1290x2796 is the App Store's iPhone 6.9" size; Play accepts at most a 2:1 ratio,
 hence 1440x2880. Remove `website` if the app has no site, or `text` entries you don't use.
 

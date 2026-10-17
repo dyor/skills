@@ -1,14 +1,23 @@
 #!/usr/bin/env python3
 """
 App store assets: screenshots for the App Store, Google Play and the app's website,
-from one set of raw phone screenshots and one shot list.
+from a pool of raw phone screenshots and a caption library.
 
-Everything app-specific (paths, shots, captions, colours, website) lives in the app's
-own config file, a Markdown file with one ```json block (see templates/assets.md).
-This script is the generic part and contains no app's details.
+The pool is every dated capture folder (<media_dir>/YYYY-MM-DD/). File names decide what
+is published and in what order:
+    1_home.png, 2_coach.png ...   selected: published in number order (gaps are fine)
+    extra_scorecard.png            a candidate: kept, not published
+    anything else                  unsorted: look at it and rename it
+The part after the prefix is the shot's id. Captions come from the config's "shots",
+keyed by id. If the same id is in several folders, the newest folder wins.
+
+Everything app-specific (paths, captions, colours, website) lives in the app's own
+config file, a Markdown file with one ```json block (see templates/assets.md). This
+script is the generic part and contains no app's details.
 
     python3 assets.py checklist   # make today's capture folder + SHOTLIST.md
-    python3 assets.py verify      # which raw shot each screenshot will use
+    python3 assets.py verify      # published (in order), extras, unsorted; problems
+    python3 assets.py sheet       # contact sheet of the pool, to choose from
     python3 assets.py compose     # captioned store screenshots, every size in "outputs"
     python3 assets.py web         # website images; prints the screenshot list as JSON
     python3 assets.py text        # store listing text lengths against the store limits
@@ -32,6 +41,10 @@ except ImportError:
 
 RAW_EXTS = (".png", ".jpg", ".jpeg")
 DATED = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+# "3_scorecard" -> published #3, id "scorecard"; "extra_scorecard" -> candidate.
+NAMED = re.compile(r"^(?:(?P<n>\d+)|extra)_(?P<id>.+)$", re.I)
+# Most phone screenshots each store accepts (override with "max" on an output).
+STORE_MAX = {"ios": 10, "play": 8}
 
 # Store character limits, by file name in the text folders.
 LIMITS = {
@@ -68,9 +81,8 @@ def load_config(root: Path, path: Path) -> dict:
     except json.JSONDecodeError as e:
         sys.exit(f"{path}: invalid JSON in the config block: {e}")
     cfg["style"] = {**DEFAULT_STYLE, **cfg.get("style", {})}
+    cfg.setdefault("shots", [])
     cfg["_root"] = root
-    if not cfg.get("shots"):
-        sys.exit(f"{path}: no shots")
     return cfg
 
 
@@ -80,36 +92,84 @@ def rel(cfg, p) -> Path:
     return p if p.is_absolute() else cfg["_root"] / p
 
 
+def media_root(cfg) -> Path:
+    return rel(cfg, cfg.get("media_dir", "distribution/media"))
+
+
 def rgb(hex_colour: str):
     h = hex_colour.lstrip("#")
     return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
 
 
+def plain(text: str) -> str:
+    return text.replace("*", "")
+
+
+# ---------------------------------------------------------------------------
+# The pool
+
+
+class Raw:
+    """One raw screenshot: its file, its publish number (None for extras) and its id."""
+
+    def __init__(self, path: Path, number, shot_id: str):
+        self.path, self.number, self.id = path, number, shot_id
+
+    @property
+    def selected(self) -> bool:
+        return self.number is not None
+
+    @property
+    def where(self) -> str:
+        return f"{self.path.parent.name}/{self.path.name}"
+
+
 def media_dirs(cfg):
     """Capture folders, newest first (YYYY-MM-DD names sort by date)."""
-    media = rel(cfg, cfg.get("media_dir", "distribution/media"))
+    media = media_root(cfg)
     if not media.is_dir():
         return []
     return sorted((d for d in media.iterdir() if d.is_dir() and DATED.match(d.name)), reverse=True)
 
 
-def resolve(cfg, shot):
-    """The raw file for a shot: the newest capture folder holding <id>.<ext>, else the
-    newest holding its legacy "file" name. Re-shooting one screen only needs that one."""
-    names = [shot["id"] + ext for ext in RAW_EXTS]
-    for d in media_dirs(cfg):
-        for n in names:
-            if (d / n).exists():
-                return d / n
-    if shot.get("file"):
-        for d in media_dirs(cfg):
-            if (d / shot["file"]).exists():
-                return d / shot["file"]
-    return None
+def pool(cfg):
+    """Every named raw (newest capture per id) and the unsorted files."""
+    by_id, unsorted = {}, []
+    for d in reversed(media_dirs(cfg)):  # oldest first, so newer folders win
+        for f in sorted(d.iterdir()):
+            if f.suffix.lower() not in RAW_EXTS:
+                continue
+            m = NAMED.match(f.stem)
+            if not m:
+                unsorted.append(f)
+                continue
+            n = m.group("n")
+            by_id[m.group("id")] = Raw(f, int(n) if n else None, m.group("id"))
+    return by_id, unsorted
 
 
-def plain(text: str) -> str:
-    return text.replace("*", "")
+def extras(by_id):
+    return sorted((r for r in by_id.values() if not r.selected), key=lambda r: r.id)
+
+
+def selection(cfg, strict=True):
+    """The published raws in order, each with its caption entry; plus any problems."""
+    by_id, _ = pool(cfg)
+    chosen = sorted((r for r in by_id.values() if r.selected), key=lambda r: r.number)
+    shots = {s["id"]: s for s in cfg["shots"]}
+    problems, seen = [], {}
+    for r in chosen:
+        if r.number in seen:
+            problems.append(f"#{r.number} is used twice: {seen[r.number].where} and {r.where}")
+        seen[r.number] = r
+        s = shots.get(r.id, {})
+        if not s.get("headline") or not s.get("subline"):
+            problems.append(f"'{r.id}' has no headline/subline in the config's shots")
+    if not chosen:
+        problems.append("nothing is selected: name the shots to publish 1_<id>.png, 2_<id>.png, …")
+    if strict and problems:
+        sys.exit("\n".join(problems))
+    return [(r, shots.get(r.id, {"id": r.id})) for r in chosen], problems
 
 
 # ---------------------------------------------------------------------------
@@ -154,22 +214,19 @@ def rounded(img, radius):
     return out
 
 
-def prepared(cfg, shot):
+def prepared(cfg, raw, shot):
     """The raw screen with blurs applied and the status bar cropped."""
-    src = resolve(cfg, shot)
-    if src is None:
-        sys.exit(f"No raw screenshot for '{shot['id']}'. Run `verify`.")
-    img = Image.open(src).convert("RGB")
+    img = Image.open(raw.path).convert("RGB")
     for box in shot.get("blur", []):
         box = tuple(box)
         img.paste(img.crop(box).filter(ImageFilter.GaussianBlur(14)), box)
     return img.crop((0, cfg["style"]["status_bar_px"], img.width, img.height))
 
 
-def compose(cfg, shot, size):
+def compose(cfg, raw, shot, size):
     style = cfg["style"]
     width, _ = size
-    screen = prepared(cfg, shot)
+    screen = prepared(cfg, raw, shot)
 
     canvas = Image.new("RGB", size, rgb(style["background"]))
     draw = ImageDraw.Draw(canvas)
@@ -194,8 +251,20 @@ def compose(cfg, shot, size):
     return canvas
 
 
-def out_name(pattern, n, shot, src):
-    return pattern.format(n=n, id=shot["id"], stem=src.stem)
+def size_flags(cfg, path: Path):
+    with Image.open(path) as im:
+        w, h = im.size
+    flags = []
+    newest = media_dirs(cfg)[:1]
+    if newest and path.parent == newest[0]:
+        flags.append("new")
+    if h < w:
+        flags.append("LANDSCAPE?")
+    elif not 1.9 <= h / w <= 2.3:
+        flags.append(f"aspect {h / w:.2f}, expected a phone ~2.17")
+    if w < 1080:
+        flags.append(f"only {w}px wide")
+    return f"{w}x{h}  {' · '.join(flags)}"
 
 
 # ---------------------------------------------------------------------------
@@ -203,90 +272,140 @@ def out_name(pattern, n, shot, src):
 
 
 def cmd_checklist(cfg, args):
-    media = rel(cfg, cfg.get("media_dir", "distribution/media"))
-    folder = media / dt.date.today().isoformat()
+    folder = media_root(cfg) / dt.date.today().isoformat()
     folder.mkdir(parents=True, exist_ok=True)
+    by_id, _ = pool(cfg)
+    chosen, _ = selection(cfg, strict=False)
+    shots = {s["id"]: s for s in cfg["shots"]}
+    describe = lambda i: shots.get(i, {}).get("screen") or plain(shots.get(i, {}).get("headline", ""))
     lines = [
-        f"# Screenshots to capture: {cfg.get('app', 'app')}",
+        f"# Screenshots: {cfg.get('app', 'app')}",
         "",
-        f"Save each screenshot in this folder as `<id>.png` (or .jpg). Re-shoot only the",
-        "screens that changed; the rest keep using their newest earlier capture.",
+        "Save new captures in this folder. The file name decides what is published:",
         "",
-        "| # | id (file name) | Screen to show | Currently using |",
+        "- `1_<id>.png`, `2_<id>.png`, …: published, left to right in number order.",
+        "  Re-shooting a published screen? Give it the same name as below.",
+        "- `extra_<id>.png`: a candidate, kept but not published.",
+        "- Any other name (e.g. `IMG_1234.PNG`) is fine; the agent will look at it and name it.",
+        "",
+        "Screens you don't re-shoot keep their newest earlier capture.",
+        "",
+        "## Published now",
+        "",
+        "| # | File name | Screen | Current capture |",
         "|---|---|---|---|",
     ]
-    for n, shot in enumerate(cfg["shots"], start=1):
-        cur = resolve(cfg, shot)
-        cur_s = str(cur.relative_to(media)) if cur else "— none yet —"
-        lines.append(f"| {n} | `{shot['id']}` | {shot.get('screen', plain(shot['headline']))} | {cur_s} |")
-    notes = cfg.get("capture_notes")
-    if notes:
-        lines += ["", "## Notes", "", notes]
+    lines += [f"| {n} | `{r.path.name}` | {describe(r.id)} | {r.where} |"
+              for n, (r, _) in enumerate(chosen, start=1)]
+    spare = extras(by_id)
+    if spare:
+        lines += ["", "## Extras (candidates)", "", "| File name | Screen | Capture |", "|---|---|---|"]
+        lines += [f"| `{r.path.name}` | {describe(r.id)} | {r.where} |" for r in spare]
+    if cfg.get("capture_notes"):
+        lines += ["", "## Notes", "", cfg["capture_notes"]]
     (folder / "SHOTLIST.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     print(folder)
 
 
 def cmd_verify(cfg, args):
-    newest = media_dirs(cfg)[:1]
-    missing = 0
-    for n, shot in enumerate(cfg["shots"], start=1):
-        src = resolve(cfg, shot)
-        if src is None:
-            missing += 1
-            print(f"{n:2}. {shot['id']:<24} MISSING")
-            continue
-        with Image.open(src) as im:
-            w, h = im.size
-        flags = []
-        if newest and src.parent == newest[0]:
-            flags.append("new")
-        if h < w:
-            flags.append("LANDSCAPE?")
-        elif not 1.9 <= h / w <= 2.3:
-            flags.append(f"aspect {h / w:.2f}, expected a phone ~2.17")
-        if w < 1080:
-            flags.append(f"only {w}px wide")
-        print(f"{n:2}. {shot['id']:<24} {src.parent.name}/{src.name}  {w}x{h}  {' · '.join(flags)}")
-    if missing:
-        sys.exit(f"{missing} shot(s) have no raw screenshot.")
+    by_id, unsorted = pool(cfg)
+    chosen, problems = selection(cfg, strict=False)
+    print("Published, in order:")
+    for n, (r, _) in enumerate(chosen, start=1):
+        print(f"  {n:2}. {r.id:<28} {r.where}  {size_flags(cfg, r.path)}")
+    spare = extras(by_id)
+    if spare:
+        print("Extras (not published):")
+        for r in spare:
+            print(f"      {r.id:<28} {r.where}  {size_flags(cfg, r.path)}")
+    if unsorted:
+        print("Unsorted (rename to N_<id> or extra_<id>):")
+        for f in unsorted:
+            print(f"      {f.parent.name}/{f.name}")
+    for store, out in cfg.get("outputs", {}).items():
+        cap = out.get("max", STORE_MAX.get(store))
+        if cap and len(chosen) > cap:
+            problems.append(f"{len(chosen)} selected, but {store} takes at most {cap}")
+    if problems:
+        sys.exit("Problems:\n" + "\n".join(f"  - {p}" for p in problems))
+
+
+def cmd_sheet(cfg, args):
+    """A labelled grid of the whole pool: published (outlined, in order), extras, unsorted."""
+    by_id, unsorted = pool(cfg)
+    chosen, _ = selection(cfg, strict=False)
+    items = [(f"{n}  {r.id}", r.path, True) for n, (r, _) in enumerate(chosen, start=1)]
+    items += [(f"extra  {r.id}", r.path, False) for r in extras(by_id)]
+    items += [(f"?  {f.parent.name}/{f.name}", f, False) for f in unsorted]
+    if not items:
+        sys.exit("The pool is empty.")
+    thumb_w, label_h, gap = 300, 64, 28
+    cols = min(6, len(items))
+    thumbs = []
+    for label, path, sel in items:
+        im = Image.open(path).convert("RGB")
+        thumbs.append((label, im.resize((thumb_w, int(im.height * thumb_w / im.width)), Image.LANCZOS), sel))
+    cell_h = max(im.height for _, im, _ in thumbs) + label_h
+    rows = (len(thumbs) + cols - 1) // cols
+    sheet = Image.new("RGB", (gap + cols * (thumb_w + gap), gap + rows * (cell_h + gap)), (24, 24, 24))
+    draw = ImageDraw.Draw(sheet)
+    try:
+        font = ImageFont.truetype(cfg["style"]["font"], 22, index=cfg["style"]["headline_font_index"])
+    except OSError:
+        font = ImageFont.load_default()
+    for i, (label, im, sel) in enumerate(thumbs):
+        x, y = gap + (i % cols) * (thumb_w + gap), gap + (i // cols) * (cell_h + gap)
+        colour = rgb(cfg["style"]["accent"]) if sel else (175, 175, 175)
+        while draw.textlength(label, font=font) > thumb_w and len(label) > 4:
+            label = label[:-2] + "…"  # keep labels inside their column
+        draw.text((x, y + 20), label, font=font, fill=colour)
+        sheet.paste(im, (x, y + label_h))
+        if sel:
+            draw.rectangle((x - 5, y + label_h - 5, x + thumb_w + 4, y + label_h + im.height + 4),
+                           outline=colour, width=5)
+    out = media_root(cfg) / "contact-sheet.png"
+    sheet.save(out, optimize=True)
+    print(out)
 
 
 def cmd_compose(cfg, args):
+    chosen, _ = selection(cfg)
     for key, out in cfg.get("outputs", {}).items():
         folder = rel(cfg, out["dir"])
         folder.mkdir(parents=True, exist_ok=True)
         pattern = out.get("name", "{n:02d}_{id}.png")
         # Replace the previous set: remove only files this pattern could have written.
-        glob = re.sub(r"\{[^}]*\}", "*", pattern)
-        for old in folder.glob(glob):
+        for old in folder.glob(re.sub(r"\{[^}]*\}", "*", pattern)):
             old.unlink()
         size = tuple(out["size"])
-        for n, shot in enumerate(cfg["shots"], start=1):
-            src = resolve(cfg, shot)
-            compose(cfg, shot, size).save(folder / out_name(pattern, n, shot, src), optimize=True)
-        print(f"{key}: {len(cfg['shots'])} screenshots, {size[0]}x{size[1]} -> {folder}")
+        for n, (raw, shot) in enumerate(chosen, start=1):
+            name = pattern.format(n=n, id=raw.id, stem=raw.path.stem)
+            compose(cfg, raw, shot, size).save(folder / name, optimize=True)
+        print(f"{key}: {len(chosen)} screenshots, {size[0]}x{size[1]} -> {folder}")
 
 
 def cmd_web(cfg, args):
     web = cfg.get("website")
     if not web:
         sys.exit("No \"website\" section in the config.")
+    chosen, _ = selection(cfg)
     folder = rel(cfg, web["static_repo"]) / web["static_dir"]
     folder.mkdir(parents=True, exist_ok=True)
     width = web.get("width", 1179)
-    shots = [s for s in cfg["shots"] if s.get("web", True)]
     listing = []
-    for shot in shots:
-        img = prepared(cfg, shot)
+    for raw, shot in chosen:
+        if shot.get("web") is False:
+            continue
+        img = prepared(cfg, raw, shot)
         img = img.resize((width, int(img.height * width / img.width)), Image.LANCZOS)
-        name = f"{shot['id']}.jpg"
+        name = f"{raw.id}.jpg"
         img.save(folder / name, quality=web.get("jpeg_quality", 85), optimize=True)
         listing.append({
             "src": f"{web['url_prefix'].rstrip('/')}/{name}",
             "title": plain(shot.get("web_title", shot["headline"])),
             "caption": shot.get("web_caption", shot["subline"]),
         })
-    print(f"{len(shots)} website images -> {folder}", file=sys.stderr)
+    print(f"{len(listing)} website images -> {folder}", file=sys.stderr)
     print(json.dumps(listing, indent=2, ensure_ascii=False))
 
 
@@ -308,16 +427,18 @@ def cmd_text(cfg, args):
         sys.exit(f"{over} field(s) over the store limit.")
 
 
+COMMANDS = {"checklist": cmd_checklist, "verify": cmd_verify, "sheet": cmd_sheet,
+            "compose": cmd_compose, "web": cmd_web, "text": cmd_text}
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("command", choices=["checklist", "verify", "compose", "web", "text"])
+    p.add_argument("command", choices=list(COMMANDS))
     p.add_argument("--root", default=".", help="the app repo (default: current directory)")
     p.add_argument("--config", default="distribution/assets.md", help="relative to --root")
     args = p.parse_args()
     root = Path(args.root).expanduser().resolve()
-    cfg = load_config(root, root / args.config)
-    {"checklist": cmd_checklist, "verify": cmd_verify, "compose": cmd_compose,
-     "web": cmd_web, "text": cmd_text}[args.command](cfg, args)
+    COMMANDS[args.command](load_config(root, root / args.config), args)
 
 
 if __name__ == "__main__":
