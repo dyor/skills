@@ -8,3 +8,6 @@
 # Python Cache
 __pycache__/
 *.pyc
+
+# IDE Files
+.idea/

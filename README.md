@@ -24,7 +24,7 @@ The agent will automatically pull down the repository code and unpack it into yo
 
 ## 2. Importing Planning Skills (Bundles)
 
-While basic skills are singular and targetted, a **Planning Skill** is a complex bundle of interconnected reusable blueprints, that the agent can use to create codebase-specific skills within your codebase. Typically a Planning Skill gets you from where you are (e.g., an old library version, an old language, an old framework) to where you want to be (e.g., a new library, a new language, a new framework). It can also be used to get from a template to a full-featured baseline app (e.g., the kmp-baseline planning skill).  
+While basic skills are singular and targeted, a **Planning Skill** is a complex bundle of interconnected reusable blueprints that the agent uses to materialize a project-specific plan **outside** of your `.skills/` directory (defaulting to `plans/<skill-name>/`, or any custom folder you choose) so your `.skills/` folder stays clean and upstream-refreshable. Typically a Planning Skill gets you from where you are (e.g., an old library version, an old language, an old framework) to where you want to be (e.g., a new library, a new language, a new framework). It can also be used to get from a template to a full-featured baseline app (e.g., the `kmp-baseline` planning skill).  
 
 The `import-skill` logic is sophisticated enough to detect when you are importing a planning skill bundle based on the `/planning-skill/` URL structure.
 

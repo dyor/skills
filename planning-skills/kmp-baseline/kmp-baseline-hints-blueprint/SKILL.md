@@ -1,9 +1,10 @@
 ---
 name: kmp-baseline-hints-blueprint
 description: CRITICAL KMP knowledge base blueprint. Activate this skill WHENEVER encountering KMP build errors, Unresolved references (Navigation 3, Room, Ktor), MissingResourceException, iOS compilation/linkage failures, Compose Multiplatform UI quirks, or when implementing native hardware integrations (Camera, Audio, Video trimming, Permissions). Always consult before modifying build.gradle.kts or resolving stubborn KMP bugs.
+version: 2.0.0
 ---
 
-> [!WARNING] This is an immutable blueprint template that is used to build the active plans. Do not execute or edit this file directly while writing code for this codebase - only for building the active plans. For active execution, use .skills/planning-skills/
+> [!WARNING] This is an immutable blueprint template used to build the active project plans. Do not execute or edit this file directly while writing code for this codebase. Active project plans must be materialized OUTSIDE of `.skills/` (default: `plans/kmp-baseline/hints.md`, or a custom directory chosen by the user).
 
 # KMP Baseline
 
@@ -13,11 +14,11 @@ Detailed instructions and best practices for configuring and developing within t
 
 ### Materialization Instructions
 When applying this blueprint to a new project:
-1. Create a new directory in the project's root called `.skills/planning-skills/kmp-baseline-local/kmp-baseline-hints-local/`.
-2. Copy this blueprint's `SKILL.md` into `.skills/planning-skills/kmp-baseline-local/kmp-baseline-hints-local/SKILL.md` and ensure the `name` in the YAML frontmatter of the newly copied file is changed to `kmp-baseline-hints-local`.
-3. **CRITICAL**: You MUST copy the entire `examples/` directory from this blueprint's directory into the new `.skills/planning-skills/kmp-baseline-local/kmp-baseline-hints-local/` directory so that it sits alongside the new `SKILL.md`.
+1. Create the target plan directory outside of `.skills/`: `<plan_dir>/` (default `plans/kmp-baseline/`).
+2. Copy this blueprint's content into `<plan_dir>/hints.md` so any project-specific additions or notes live outside of `.skills/`.
+3. **CRITICAL**: You MUST copy the entire `examples/` directory from this blueprint's directory into `<plan_dir>/examples/` so that it sits alongside `<plan_dir>/hints.md`.
 
-- This re-usable skill will be used to create `kmp-baseline-hints-local/SKILL.md` within a user's codebase (in the /.skills directory in accordance with convention) that will be used to provide details where the agent typically makes mistakes and wastes time and tokens in getting KMP projects properly configured. 
+- This reusable skill is used to materialize `<plan_dir>/hints.md` within a user's codebase (outside the `.skills/` directory so upstream skills stay clean) to provide details where the agent typically makes mistakes and wastes time and tokens in getting KMP projects properly configured. 
 - Use this when initializing a new KMP project that requires Room, Compose Navigation 3, Koin, Material 3, Calf permissions, and native integrations (e.g., camera and microphone).
 - This is helpful for resolving tricky Gradle dependencies, debugging "MissingResourceException", or diagnosing KMP database migration issues.
 - Use this when working with native UI components in Compose (like `AndroidView` or `UIKitView`) or dealing with native video playback/trimming cross-platform.
@@ -332,7 +333,7 @@ actual fun getInMemoryDatabase(): AppDatabase {
 
 #### Avoid Version Roulette (CRITICAL AI INSTRUCTION)
 *   **Rule**: Before randomly changing version numbers or regressing to previous library versions, **ALWAYS** follow these steps:
-    1.  **Check Existing Documentation**: Consult `.skills/planning-skills/kmp-baseline-local/kmp-baseline-hints-local/SKILL.md` and `AGENTS.md` for any forbidden or recommended versions.
+    1.  **Check Existing Documentation**: Consult `<plan_dir>/hints.md` (default `plans/kmp-baseline/hints.md`) and `AGENTS.md` for any forbidden or recommended versions.
     2.  **Web Search & Official Docs**: Use `web_search` and `search_android_docs` to find official migration guides, known issues, or compatibility tables for the library in question.
     3.  **Prioritize Code Updates**: The error is most likely due to API changes in a newer library version. Focus on updating your code to match the new version's API, rather than downgrading the library.
     4.  **Diagnose Transitive Conflicts**: Use Gradle's `dependencyInsight` command to identify potential transitive dependency mismatches. For example, to diagnose Ktor issues for the iOS ARM64 compilation classpath:

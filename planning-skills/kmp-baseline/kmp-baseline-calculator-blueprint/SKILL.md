@@ -1,28 +1,29 @@
 ---
 name: kmp-baseline-calculator-blueprint
-description: Blueprint for estimating and reporting how much of the project described in the kmp-baseline-guide-local has been completed.
+description: Blueprint for estimating and reporting how much of the project described in `<plan_dir>/guide.md` has been completed, writing the summary to `<plan_dir>/progress.md` outside of `.skills/`.
+version: 2.0.0
 ---
 
-> [!WARNING] This is an immutable blueprint template that is used to build the active plans. Do not execute or edit this file directly while writing code for this codebase - only for building the active plans. For active execution, use .skills/planning-skills/
+> [!WARNING] This is an immutable blueprint template used to build the active project plans. Do not execute or edit this file directly while writing code for this codebase. Active project plans must be materialized OUTSIDE of `.skills/` (default: `plans/kmp-baseline/progress.md`, or a custom directory chosen by the user).
 
 # Blueprint Calculator Skill
 
 ## When to use this skill
-- Use this when generating a new progress calculator for a project at `kmp-baseline-calculator-local/SKILL.md`.
-- This is helpful for structuring the report correctly.
+- Use this when generating or updating the progress report for a project at `<plan_dir>/progress.md` (default `plans/kmp-baseline/progress.md`).
+- Keeps progress reports alongside your project plan outside `.skills/`.
 
 ## How to use it
-- Execute the instructions for the AI Assistant below to read a `kmp-baseline-guide-local/SKILL.md` and create a `kmp-baseline-calculator-local/SKILL.md` where the `kmp-baseline-calculator-local` is used to estimate how much of the work covered by the `kmp-baseline-guide-local` has been completed.
+- Execute the instructions for the AI Assistant below to read `<plan_dir>/guide.md` and create or update `<plan_dir>/progress.md`.
 
 ---
 
 # Skill: KMP Project Progress Calculator
 
 ## Description
-This document provides predefined instructions for an AI assistant to estimate and report how much of the project described in the `.skills/planning-skills/kmp-baseline-local/kmp-baseline-guide-local/SKILL.md` file has been completed. 
+This document provides predefined instructions for an AI assistant to estimate and report how much of the project described in `<plan_dir>/guide.md` (default `plans/kmp-baseline/guide.md`) has been completed.
 
 ## Materialization Instructions / Usage
-To materialize this skill in a new project, copy or generate the contents of this blueprint into a new file located at `.skills/planning-skills/kmp-baseline-local/kmp-baseline-calculator-local/SKILL.md` within the user's project codebase. Then, prompt the AI to calculate the project progress in accordance with it.
+To materialize or update this report in a project, parse `<plan_dir>/guide.md` and write the output to `<plan_dir>/progress.md` (never inside `.skills/`).
 
 ---
 
@@ -30,53 +31,31 @@ To materialize this skill in a new project, copy or generate the contents of thi
 
 When the trigger prompt is received, please perform the following steps:
 
-### 1. Parse the `kmp-baseline-guide-local` File
-Locate the `.skills/planning-skills/kmp-baseline-local/kmp-baseline-guide-local/SKILL.md` file. Read its contents to understand the project phases, steps, and associated tasks.
+### 1. Parse the `<plan_dir>/guide.md` File
+Locate `<plan_dir>/guide.md` (default `plans/kmp-baseline/guide.md`). Read its contents to understand the project phases, steps, and associated tasks.
 
 ### 2. Calculate Task Metrics
-Scan through all the actionable checkboxes (e.g. `- [ ]` for incomplete, `- [x]` or `- [X]` for complete) within the `kmp-baseline-guide-local` document.
+Scan through all the actionable checkboxes (`- [ ]` for incomplete, `- [x]` or `- [X]` for complete) within `guide.md`.
 Categorize the tasks by Phase and calculate:
 *   **Total Tasks**: The total number of checkbox items in each phase.
 *   **Completed Tasks**: The number of tasks marked as `- [x]`.
 *   **Pending Tasks**: The number of tasks marked as `- [ ]`.
 *   *Action Breakdown*: Count how many pending tasks are assigned to `**User Action**`, `**Agent Action**`, and `**Validation**`.
 
-### 3. Generate `kmp-baseline-calculator-local`
-Create or update `.skills/planning-skills/kmp-baseline-local/kmp-baseline-calculator-local/SKILL.md` with a comprehensive progress report. Populate it with the standard YAML frontmatter and the following structure:
+### 3. Generate `<plan_dir>/progress.md`
+Create or update `<plan_dir>/progress.md` with a comprehensive progress report:
 
-*   **Methodology:** A brief explanation that progress is calculated based on the completion of actionable tasks (`- [x]` vs `- [ ]`) outlined in the `kmp-baseline-guide-local` phases.
-*   **Phase Breakdown:** A markdown table detailing the progress of each phase. The table must have the following columns:
-    *   `Phase`
-    *   `Total Tasks`
-    *   `Completed`
-    *   `Pending`
-    *   `Completion %`
-*   **Actionable Insights:** A brief list of the immediate next steps (the first 1-3 pending tasks) and who is responsible (`User Action` or `Agent Action`).
+*   **Methodology:** A brief explanation that progress is calculated based on the completion of actionable tasks (`- [x]` vs `- [ ]`) outlined in `<plan_dir>/guide.md`.
+*   **Phase Breakdown:** A markdown table detailing the progress of each phase (`Phase`, `Total Tasks`, `Completed`, `Pending`, `Completion %`).
+*   **Actionable Insights:** A brief list of the immediate next steps (the first 1–3 pending tasks) and who is responsible (`User Action` or `Agent Action`).
 *   **Overall Project Progress:** The absolute sum of all completed tasks divided by the total tasks, displayed prominently as a percentage.
 
-### Example Output Structure
+### Example Output Structure (`<plan_dir>/progress.md`)
 ```markdown
----
-name: kmp-baseline-calculator-local
-description: Tracks and calculates the overall completion percentage of the project based on the kmp-baseline-guide-local tasks.
----
-
-# Progress Calculator
-
-## When to use this skill
-- Use this when needing to update or view the current completion percentage of the project.
-- This is helpful for providing a summary of how many tasks are completed versus pending.
-
-## How to use it
-- Reference the latest kmp-baseline-guide-local status.
-- Tally the `[x]` vs `[ ]` tasks to output an updated metric.
-
----
-
 # Project Progress Calculation
 
 ## Methodology
-Progress is calculated by evaluating the completed (`- [x]`) versus pending (`- [ ]`) tasks defined across all phases in the `.skills/planning-skills/kmp-baseline-local/kmp-baseline-guide-local/SKILL.md` file.
+Progress is calculated by evaluating the completed (`- [x]`) versus pending (`- [ ]`) tasks defined across all phases in `plans/kmp-baseline/guide.md`.
 
 ## Phase Breakdown
 

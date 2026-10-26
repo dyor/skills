@@ -1,7 +1,7 @@
 ---
 name: dyor-knowledge-base
 description: A summary of all names and descriptions of skills in the dyor/skills repository, used to guide importing relevant skills.
-version: 1.3.0
+version: 1.4.0
 ---
 
 # Skill: dyor-knowledge-base
@@ -12,6 +12,14 @@ This skill acts as a repository of knowledge about available skills in the `dyor
 ## Available Skills
 
 ### Standalone Skills
+
+- **`android-review`**
+  - **Description**: Conducts an exhaustive, rigorous Android and Kotlin Multiplatform (KMP) code review following Android Studio principal code review standards.
+  - **URL**: `https://github.com/dyor/skills/tree/main/android-review`
+
+- **`agentic-test-driven-development`**
+  - **Description**: A visual test-driven development loop for Compose apps using Compose HotSwan for Android device testing. Navigates the live app, edits code, hot-reloads, and produces a markdown report that embeds before/after screenshots.
+  - **URL**: `https://github.com/dyor/skills/tree/main/agentic-test-driven-development`
 
 - **`app-store-assets`**
   - **Description**: Refreshes an app's App Store and Google Play screenshots (captioned, at every store size), checks listing text against store limits, and updates the app website's screenshot gallery and copy, from one shot list. Say "update screenshots". App-specific settings live in the app repo's `distribution/assets.md`.
@@ -26,7 +34,7 @@ This skill acts as a repository of knowledge about available skills in the `dyor
   - **URL**: `https://github.com/dyor/skills/tree/main/compose-migration-hints`
 
 - **`create-planning-skill`**
-  - **Description**: Scaffolds a complete 6-part Planning Skill (Prompt, Agent, Guide, Calculator, Validation, Hints) inside the remote `.skills/planning-skills/` directory for authoring a new chunk of orchestrated work.
+  - **Description**: Scaffolds a complete 6-part Planning Skill (Prompt, Agent, Guide, Calculator, Validation, Hints) inside `planning-skills/<name>/` for authoring a new chunk of orchestrated work. Enforces materializing project-specific plans OUTSIDE of `.skills/` (default `plans/<name>/`, user-configurable).
   - **URL**: `https://github.com/dyor/skills/tree/main/create-planning-skill`
 
 - **`execute-and-report-journey`**
@@ -53,13 +61,17 @@ This skill acts as a repository of knowledge about available skills in the `dyor
   - **Description**: Core directives for managing an autonomous migration project. Enforces a strict Test-Driven Development (TDD) loop, Autonomous Execution, and Zero Permission constraints.
   - **URL**: `https://github.com/dyor/skills/tree/main/migration-workflow-directives`
 
-- **`multi-project-skill`**
-  - **Description**: Central utility skill to resolve environment paths ($USER_HOME, $PROJECT_HOME) and share agentic capabilities across multiple local Android Studio projects.
-  - **URL**: `https://github.com/dyor/skills/tree/main/multi-project-skill`
+- **`render-mermaid-studio`**
+  - **Description**: Renders ```mermaid diagrams inside Markdown (.md) files into crisp local PNGs inside a sibling `.mermaid/` folder so they render natively in Android Studio's Compose Markdown preview (with `file://` absolute paths, `sips` width scaling, clickable Full-Size PNG & `.mmd` source links, and `-->` comment escaping).
+  - **URL**: `https://github.com/dyor/skills/tree/main/render-mermaid-studio`
 
 - **`skills-repo-sync`**
   - **Description**: Author-side. Sets up your own GitHub skills repo for two-way sync across machines: a local clone, linked into `~/.agents/skills` (and Claude/Gemini) by the repo's `install.sh`, synced with plain git. Covers new machines, retiring and renaming skills.
   - **URL**: `https://github.com/dyor/skills/tree/main/skills-repo-sync`
+
+- **`studio-skills-location`**
+  - **Description**: Reference guide for where Android Studio (Quail 1+ and Rabbit 2+) places, discovers, and manages Agent Mode skills across Global and Project scopes (`.android-studio/skills` and `.agents/skills`), how catalog vs. custom skills work, and how to migrate from legacy pre-Quail directories (`.skills` and `.agent/skills`).
+  - **URL**: `https://github.com/dyor/skills/tree/main/studio-skills-location`
 
 - **`update-importable-skill`**
   - **Description**: A utility skill to programmatically update or bump the front-matter metadata (like version numbers) of existing SKILL.md files.
@@ -68,7 +80,7 @@ This skill acts as a repository of knowledge about available skills in the `dyor
 ### Planning Skills
 
 - **`kmp-baseline`**
-  - **Description**: A complex bundle of interconnected reusable blueprints to get from a template to a full-featured baseline app. Available under the `planning-skills/` structure.
+  - **Description**: A complex bundle of interconnected reusable blueprints to get from a template to a full-featured baseline app. Blueprints live in `planning-skills/kmp-baseline`, while customized project plans materialize outside `.skills/` (default `plans/kmp-baseline/`, user-configurable).
   - **URL**: `https://github.com/dyor/skills/tree/main/planning-skills/kmp-baseline`
   - **Constraint**: Skills associated with this planning skill are not to be installed individually - only install the entire collection of skills.
 

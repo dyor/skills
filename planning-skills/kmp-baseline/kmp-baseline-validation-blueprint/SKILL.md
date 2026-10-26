@@ -1,9 +1,10 @@
 ---
 name: kmp-baseline-validation-blueprint
-description: Tracks the validation of explicitly defined end-to-end user journeys in the application.
+description: Tracks the validation of explicitly defined end-to-end user journeys in the application. Materializes to `<plan_dir>/validation.md` outside of `.skills/`.
+version: 2.0.0
 ---
 
-> [!WARNING] This is an immutable blueprint template that is used to build the active plans. Do not execute or edit this file directly while writing code for this codebase - only for building the active plans. For active execution, use .skills/planning-skills/
+> [!WARNING] This is an immutable blueprint template used to build the active project plans. Do not execute or edit this file directly while writing code for this codebase. Active project plans must be materialized OUTSIDE of `.skills/` (default: `plans/kmp-baseline/validation.md`, or a custom directory chosen by the user).
 
 # User Journey Validation
 
@@ -12,7 +13,7 @@ This document contains a rigorous, multi-layered testing plan tailored precisely
 ## Execution Protocol
 1.  **Agent Validations**: The AI agent will first execute any programmatically verifiable tests, scripts, or inspection to confirm the behavior.
 2.  **User Validations**: The AI agent will then prompt the User to manually navigate the application UI to functionally experience the journey. 
-3.  **Bug Tracking**: If a journey fails validation, the AI agent must abort the validation process, update the appropriate phase in `kmp-baseline-guide-local` with a new `**Agent Action**: Fix bug [...]`, and resolve the issue before re-attempting validation.
+3.  **Bug Tracking**: If a journey fails validation, the AI agent must abort the validation process, update the appropriate phase in `<plan_dir>/guide.md` with a new `**Agent Action**: Fix bug [...]`, and resolve the issue before re-attempting validation.
 
 ---
 

@@ -1,52 +1,58 @@
 ---
 name: kmp-baseline-prompt-blueprint
-description: Blueprint outlining the initial prompt steps for setting up the management and tracking files.
+description: Blueprint outlining the initial prompt steps for materializing the KMP baseline plan outside of `.skills/` (default `plans/kmp-baseline/`).
+version: 2.0.0
 ---
 
-> [!WARNING] This is an immutable blueprint template that is used to build the active plans. Do not execute or edit this file directly while writing code for this codebase - only for building the active plans. For active execution, use .skills/planning-skills/
+> [!WARNING] This is an immutable blueprint template used to build the active project plans. Do not execute or edit this file directly while writing code for this codebase. Active project plans must be materialized OUTSIDE of `.skills/` (default: `plans/kmp-baseline/`, or a custom directory chosen by the user).
 
 # Initial Prompt Skill
 
 ## When to use this skill
-- Use this when initializing a brand new KMP project that requires setting up the core tracking structure.
-- This is helpful for standardizing how projects are kicked off.
+- Use this when initializing a brand new KMP project that requires setting up the core planning and tracking structure.
+- Standardizes how projects are kicked off while keeping `.skills/` clean and upstream-refreshable.
 
 ## How to use it
 - Send the following prompt as the very first instruction in a new environment.
 
 ---
 
-I want you to initialize this new KMP project by executing the blueprint skills in the imported `.skills/imported-skills/planning-skills/kmp-baseline/` directory. You must generate their corresponding codebase-specific `-local` files in a completely new, separate directory called `.skills/planning-skills/kmp-baseline-local/`. Do not write any generated files into the imported `kmp-baseline` directory.
+I want you to initialize this new KMP project by reading the blueprint skills in `.skills/imported-skills/planning-skills/kmp-baseline/` (or the active `kmp-baseline` skill directory).
 
-Please follow these exact steps sequentially. Do not start executing the actual development tasks yet; your goal is purely to generate the management and tracking files.
+**CRITICAL ARCHITECTURAL RULE — DO NOT WRITE PLANS INTO `.skills/`:**
+The `.skills/` directory is reserved for upstream-synced skills and must not be polluted with project-specific plans. You must materialize all codebase-specific plan files into a dedicated project directory **outside** of `.skills/`, referred to below as `<plan_dir>`.
+- **Default `<plan_dir>`**: `plans/kmp-baseline` (at the project root).
+- Before generating files, ask the user if they want to use the default `plans/kmp-baseline/` directory or specify a custom directory (e.g., `SPECS/kmp-baseline/`).
 
-1. **Read the Blueprint Skills:** 
-    Read the sibling directories located adjacent to this prompt (inside the `.skills/imported-skills/planning-skills/kmp-baseline/` folder) to understand the templates available.
-   *CRITICAL RULE:* For any skill instantiated from this `kmp-baseline/` directory, if its corresponding blueprint directory contains an `examples/` or `resources/` folder (e.g., `../[blueprint-name]/examples/` or `../[blueprint-name]/resources/`), you MUST copy those folders into the newly created local directory (e.g., `[local-skill-name]/examples/` and `[local-skill-name]/resources/` under `.skills/planning-skills/kmp-baseline-local/`).
+Please follow these exact steps sequentially. Do not start executing the actual development tasks yet; your goal is purely to generate the management and tracking files in `<plan_dir>/`.
 
-2. **Generate the `kmp-baseline-hints-local`:**
-   Execute the instructions in `../kmp-baseline-hints-blueprint/SKILL.md` to create the codebase-specific `kmp-baseline-hints-local/SKILL.md` file (located in `.skills/planning-skills/kmp-baseline-local/kmp-baseline-hints-local/SKILL.md`), which will act as the baseline for architecture rules and library versions. Don't forget to copy the `examples/` folder if it exists.
+1. **Read the Blueprint Skills:**
+   Read the sibling directories located adjacent to this prompt (inside the `kmp-baseline/` blueprint folder) to understand the templates available.
+   *CRITICAL RULE:* For any blueprint that contains an `examples/` or `resources/` folder (e.g., `../[blueprint-name]/examples/` or `../[blueprint-name]/resources/`), you MUST copy those folders into `<plan_dir>/` (i.e., `<plan_dir>/examples/` and `<plan_dir>/resources/`).
 
-3. **Generate the `kmp-baseline-guide-local`:**
-   Execute the instructions in `../kmp-baseline-guide-blueprint/SKILL.md` to create the `kmp-baseline-guide-local/SKILL.md` file (located in `.skills/planning-skills/kmp-baseline-local/kmp-baseline-guide-local/SKILL.md`).
-   *Here are the core details for the project you should use to populate the guide:*
+2. **Generate `<plan_dir>/hints.md`:**
+   Execute the instructions in `../kmp-baseline-hints-blueprint/SKILL.md` to create the codebase-specific `<plan_dir>/hints.md` file, which will act as the baseline for architecture rules and library versions. Don't forget to copy the `examples/` folder into `<plan_dir>/examples/` if it exists.
+
+3. **Generate `<plan_dir>/guide.md`:**
+   Execute the instructions in `../kmp-baseline-guide-blueprint/SKILL.md` to create `<plan_dir>/guide.md`. Copy `resources/` into `<plan_dir>/resources/` if present.
+   *Here are the default details for the project you should use to populate the guide (or ask the user to override them):*
    - **App Name:** Factory
    - **Target Audience:** KMP App Builders
-   - **Core Problem:** Streamlining the creation and publication of YouTube Short educational videos about the app. 
-   - **Visual Style/Theme:** Film noir-classic old school movie theme. 
-   - **Core Architecture:** Kotlin Multiplatform (Android, iOS), Jetpack Compose / Compose Multiplatform, Room, Ktor, Koin, Coil, Jetpack Navigation 3, Calf permissions. 
+   - **Core Problem:** Streamlining the creation and publication of YouTube Short educational videos about the app.
+   - **Visual Style/Theme:** Film noir-classic old school movie theme.
+   - **Core Architecture:** Kotlin Multiplatform (Android, iOS), Jetpack Compose / Compose Multiplatform, Room, Ktor, Koin, Coil, Jetpack Navigation 3, Calf permissions.
    *Ensure the output strictly follows the Phased Execution structure and uses the `**User Action**`, `**Agent Action**`, and `**Validation**` prefixes for all tasks.*
-   **Validation** before moving on to step 4, ask the user verify the contents of `kmp-baseline-guide-local` and to say 'Proceed' when the review is complete. 
+   **Validation**: Before moving on to step 4, ask the user to verify the contents of `<plan_dir>/guide.md` and say 'Proceed' when the review is complete.
 
-4. **Generate the `kmp-baseline-validation-local`:**
-   Once `kmp-baseline-guide-local` is created, use the instructions in `../kmp-baseline-validation-blueprint/SKILL.md` to generate the `kmp-baseline-validation-local/SKILL.md` file (located in `.skills/planning-skills/kmp-baseline-local/kmp-baseline-validation-local/SKILL.md`). Tailor the multi-layered testing plan specifically to the phases and features you just outlined in the `kmp-baseline-guide-local`. Ask user for any information needed to create a robust validation plan. 
+4. **Generate `<plan_dir>/validation.md`:**
+   Once `<plan_dir>/guide.md` is created, use the instructions in `../kmp-baseline-validation-blueprint/SKILL.md` to generate `<plan_dir>/validation.md`. Tailor the multi-layered testing plan specifically to the phases and features you just outlined in `<plan_dir>/guide.md`. Ask the user for any information needed to create a robust validation plan.
 
-5. **Generate the `kmp-baseline-calculator-local`:**
-   Next, use the instructions in `../kmp-baseline-calculator-blueprint/SKILL.md` to parse the newly created `kmp-baseline-guide-local` and generate the initial `kmp-baseline-calculator-local/SKILL.md` file (located in `.skills/planning-skills/kmp-baseline-local/kmp-baseline-calculator-local/SKILL.md`) to give us our starting baseline progress report. As we work through the `kmp-baseline-guide-local`, we will periodically run the `kmp-baseline-calculator-local` to estimate how much of the work we have completed. 
+5. **Generate `<plan_dir>/progress.md`:**
+   Next, use the instructions in `../kmp-baseline-calculator-blueprint/SKILL.md` to parse the newly created `<plan_dir>/guide.md` and generate the initial `<plan_dir>/progress.md` file to give us our starting baseline progress report. As we work through `<plan_dir>/guide.md`, we will periodically update `<plan_dir>/progress.md` to estimate how much of the work we have completed.
 
-6. **Generate the `AGENTS.md`:**
-   Finally, use the instructions in `../kmp-baseline-agent-blueprint/SKILL.md` to create or update an `AGENTS.md` file in the root directory that has agent instructions that prevent the agent from making mistakes. As we work with this project, we will continue to add more instructions to `AGENTS.md` to keep the agent working smoothly with this project.
+6. **Generate Root `AGENTS.md`:**
+   Finally, use the instructions in `../kmp-baseline-agent-blueprint/SKILL.md` to create or update an `AGENTS.md` file in the root directory that points to `<plan_dir>/` (`guide.md`, `hints.md`, `validation.md`, `progress.md`) and prevents the agent from making mistakes.
 
 ## Execution & Validation Rules
-When we begin executing `kmp-baseline-guide-local`, you must strictly adhere to the following rules:
+When we begin executing `<plan_dir>/guide.md`, you must strictly adhere to the following rules:
 * **CRITICAL Validation Rule**: You are strictly forbidden from checking off a `**Validation**` task in the guide unless you have physically run the `execute-and-report-journey` skill, captured the screenshots, and verified the generated `report.md` exists on disk. Never simulate or assume a validation step.

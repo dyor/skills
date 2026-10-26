@@ -3,7 +3,7 @@ name: android-review
 description: Conducts an exhaustive, rigorous Android and Kotlin Multiplatform (KMP) code review following Android Studio principal code review standards. Dynamically checks installed domain skills, discovers missing skills from android/skills and firebase/agent-skills, cross-references official Android documentation via search_android_docs, and audits main thread safety, lifecycle leaks, coroutines, platform interop, and actionable fix generation.
 ---
 
-# Android Code Review
+# Android Change Review
 
 Conduct an exhaustive, critical, and architecture-first code review for Android and Kotlin Multiplatform (KMP) codebases, modeled directly on the Android Studio principal code reviewer persona and evaluation methodology.
 

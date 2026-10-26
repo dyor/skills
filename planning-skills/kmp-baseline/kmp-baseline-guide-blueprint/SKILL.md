@@ -1,19 +1,20 @@
 ---
 name: kmp-baseline-guide-blueprint
-description: The central source of truth for planning, tracking progress, and orchestrating work between the AI Agent and the User in this codebase.
+description: The central source of truth blueprint for planning, tracking progress, and orchestrating work between the AI Agent and the User in a KMP codebase. Materializes outside of `.skills/` (default `plans/kmp-baseline/guide.md`).
+version: 2.0.0
 ---
 
-> [!WARNING] This is an immutable blueprint template that is used to build the active plans. Do not execute or edit this file directly while writing code for this codebase - only for building the active plans. For active execution, use .skills/planning-skills/
+> [!WARNING] This is an immutable blueprint template used to build the active project plans. Do not execute or edit this file directly while writing code for this codebase. Active project plans must be materialized OUTSIDE of `.skills/` (default: `plans/kmp-baseline/guide.md`, or a custom directory chosen by the user).
 
-# Skill: Project Orchestration via kmp-baseline-guide-local/SKILL.md
+# Skill: Project Orchestration via `<plan_dir>/guide.md`
 
 ## Overview
-This re-usable skill provides the structure and instructions for an AI Agent to generate, maintain, and execute a `kmp-baseline-guide-local/SKILL.md` file specific to the user's codebase. The `kmp-baseline-guide-local/SKILL.md` is the central source of truth for planning, tracking progress, and orchestrating work between the AI Agent and the User in a codebase during a buildout of a baseline KMP project (e.g., adding baseline KMP cababilities to a KMP template).
+This reusable skill provides the structure and instructions for an AI Agent to generate, maintain, and execute a project-specific `guide.md` file **outside** of `.skills/`. Keeping the active plan in `<plan_dir>/guide.md` (default `plans/kmp-baseline/guide.md`) ensures the `.skills/` directory remains clean and upstream-refreshable.
 
-## Materialization Instructions for Generating a New `kmp-baseline-guide-local`
-When placed in a new codebase and asked to create a `kmp-baseline-guide-local/SKILL.md`, create the file at `.skills/planning-skills/kmp-baseline-local/kmp-baseline-guide-local/SKILL.md`. Ask for details on the project requirements and generate the document following this exact structure.
+## Materialization Instructions for Generating a New `<plan_dir>/guide.md`
+When placed in a new codebase and asked to create the project guide, create the file at `<plan_dir>/guide.md` (default `plans/kmp-baseline/guide.md` — never inside `.skills/`). Ask for details on the project requirements and generate the document following this exact structure.
 
-Also, copy the contents of the blueprint's `resources/` folder to the materialized local's `resources/` folder to make assets available to the task runner (this is done automatically during materialization by the agent).
+Also, copy the contents of the blueprint's `resources/` folder (if present) to `<plan_dir>/resources/` to make assets available to the task runner.
 
 ### 1. Project Overview
 Define the high-level intent, core architecture, and stylistic guidelines of the project. When information is needed from the user, such as [App Name] or [Architecture]
@@ -27,17 +28,15 @@ Within each phase, define numbered steps with specific checklist items.
 Prefix each task with the responsible party to ensure clear separation of duties:
 *   `**User Action**:` For manual steps the human must take (e.g., running `git init`, testing on a physical device, adding visual assets, creating external accounts).
 *   `**Agent Action**:` For code generation, refactoring, build configuration, and file modifications the AI will perform.
-*   `**Validation**:` A reserved step explicitly triggering the execution of specific user journeys defined in `.skills/planning-skills/kmp-baseline-local/kmp-baseline-validation-local/SKILL.md`. This represents an important end-to-end journey that the agent and the user are going to confirm is working and track.
+*   `**Validation**:` A reserved step explicitly triggering the execution of specific user journeys defined in `<plan_dir>/validation.md`. This represents an important end-to-end journey that the agent and the user are going to confirm is working and track.
 
 ### 4. Tracking State
 Use Markdown checkboxes as bulleted lists to track state, which ensures they render on separate lines. All new tasks should start as `- [ ]`. When completed, update the document to `- [x]`.
 
-## `kmp-baseline-guide-local/SKILL.md` Template for New KMP Project
+## `<plan_dir>/guide.md` Template for New KMP Project
 ```markdown
----
-name: kmp-baseline-guide-local
-description: The central source of truth for planning, tracking progress, and orchestrating work between the AI Agent and the User in this codebase.
----
+# KMP Project Guide: [App Name]
+
 
 ## Project Overview
 [App Name: default: Baseline Joke App / The Factory] is a [Architecture: default=MVVM] application.
@@ -78,7 +77,7 @@ Goal: Implement a minimal feature set to validate all core libraries working tog
 Goal: Transition from the baseline app to the product, applying styles and branding.
 
 ### Step 1: Aesthetic & Branding
-- [ ] **Agent Action**: Copy `film_noir.png` from `.skills/planning-skills/kmp-baseline-local/kmp-baseline-guide-local/resources/film_noir.png` into the project's shared resources directory (`shared/src/commonMain/composeResources/drawable/film_noir.png`).
+- [ ] **Agent Action**: Copy `film_noir.png` from `<plan_dir>/resources/film_noir.png` into the project's shared resources directory (`shared/src/commonMain/composeResources/drawable/film_noir.png`).
 - [ ] **Agent Action**: Set `film_noir.png` as background image in the core UI composable.
 - [ ] **Agent Action**: Override the clean baseline Material theme with the high-contrast Film Noir colors (e.g., overriding purple/greys with cinematic darks and golds as seen in reference codebase).
 - [ ] **Agent Action**: Rebrand the app (string resources, icons).
@@ -125,7 +124,7 @@ Goal: Cleanup, polish, and optimization.
 
 ## Execution Protocol
 When the User says "Execute" or "Continue with the guide":
-1.  Open and read the generated `SKILL.md` file.
+1.  Open and read the project's `<plan_dir>/guide.md` file (default `plans/kmp-baseline/guide.md`).
 2.  Scan sequentially to identify the first incomplete `- [ ]` task.
 3.  If the next task is an `**Agent Action**`:
     -   Perform the necessary code changes to complete the action.
@@ -137,7 +136,7 @@ When the User says "Execute" or "Continue with the guide":
         *   Always perform a Gradle sync (`gradle_sync()`) after modifying build scripts (`libs.versions.toml`, `build.gradle.kts`).
         *   Always run `analyze_file()` after significant code changes to catch new errors.
     -   Validate the changes (e.g., run local unit tests or build commands if applicable).
-    -   Update the guide file, changing the `- [ ]` to `- [x]` for the completed task.
+    -   Update `<plan_dir>/guide.md`, changing the `- [ ]` to `- [x]` for the completed task.
     -   Move on to the next task or pause if the next task requires the User.
-4.  **STOP ON USER ACTIONS**: You must process the `kmp-baseline-guide-local` strictly sequentially. If the next unchecked item in the guide is a User Action, you MUST STOP execution, explicitly prompt the user to complete that action, and wait for their confirmation. Do NOT proceed to subsequent Agent Actions or Validations until the user confirms the step is done.
-5.  Periodically, at the end of a session or after major milestones, run the instructions in `.skills/planning-skills/kmp-baseline-local/kmp-baseline-calculator-local/SKILL.md` to update the progress tracking and keep it up to date.
+4.  **STOP ON USER ACTIONS**: You must process `<plan_dir>/guide.md` strictly sequentially. If the next unchecked item in the guide is a User Action, you MUST STOP execution, explicitly prompt the user to complete that action, and wait for their confirmation. Do NOT proceed to subsequent Agent Actions or Validations until the user confirms the step is done.
+5.  Periodically, at the end of a session or after major milestones, follow the instructions in `kmp-baseline-calculator-blueprint/SKILL.md` to update `<plan_dir>/progress.md`.
