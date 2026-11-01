@@ -13,6 +13,10 @@ This skill acts as a repository of knowledge about available skills in the `dyor
 
 ### Standalone Skills
 
+- **`adapty-store-payments`**
+  - **Description**: Set up, test and launch consumable in-app purchases through Adapty on Google Play and the App Store: store and Adapty setup order, crediting from the webhook (sandbox credited with a cap), pre-launch testing on TestFlight and Play license testing, launch sequences and a symptoms table. Each app's progress lives in its own repo (`distribution/payments.md`).
+  - **URL**: `https://github.com/dyor/skills/tree/main/adapty-store-payments`
+
 - **`android-review`**
   - **Description**: Conducts an exhaustive, rigorous Android and Kotlin Multiplatform (KMP) code review following Android Studio principal code review standards.
   - **URL**: `https://github.com/dyor/skills/tree/main/android-review`
