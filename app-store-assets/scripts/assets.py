@@ -65,6 +65,8 @@ DEFAULT_STYLE = {
     "font": "/System/Library/Fonts/Avenir Next.ttc",
     "headline_font_index": 0,
     "subline_font_index": 5,
+    # False: headline only on the images (sublines still caption the website).
+    "sublines": True,
     # Cropped from the top of every raw shot: the phone's status bar dates the shot.
     "status_bar_px": 150,
 }
@@ -192,8 +194,10 @@ def selection(cfg, strict=True):
             problems.append(f"#{r.number} is used twice: {seen[r.number].path.name} and {r.path.name}")
         seen[r.number] = r
         s = shots.get(r.id, {})
-        if not s.get("headline") or not s.get("subline"):
-            problems.append(f"'{r.id}' has no headline/subline in the config's shots")
+        if not s.get("headline"):
+            problems.append(f"'{r.id}' has no headline in the config's shots")
+        elif cfg["style"]["sublines"] and not s.get("subline"):
+            problems.append(f"'{r.id}' has no subline (or set \"sublines\": false in style)")
     if not chosen:
         problems.append("nothing is selected: in the newest capture folder, name the shots to "
                         "publish 1_<id>.png, 2_<id>.png, …")
@@ -262,13 +266,20 @@ def compose(cfg, raw, shot, size):
     draw = ImageDraw.Draw(canvas)
     scale = width / 1290
     y = draw_headline(draw, shot["headline"], int(150 * scale), width, int(96 * scale), style)
-    sub = ImageFont.truetype(style["font"], int(54 * scale), index=style["subline_font_index"])
-    draw.text(((width - draw.textlength(shot["subline"], font=sub)) / 2, y + int(20 * scale)),
-              shot["subline"], font=sub, fill=rgb(style["subline"]))
-    top = y + int(150 * scale)
+    if style["sublines"] and shot.get("subline"):
+        sub = ImageFont.truetype(style["font"], int(54 * scale), index=style["subline_font_index"])
+        draw.text(((width - draw.textlength(shot["subline"], font=sub)) / 2, y + int(20 * scale)),
+                  shot["subline"], font=sub, fill=rgb(style["subline"]))
+        top = y + int(150 * scale)
+        shot_w = int(width * 0.84)
+    else:
+        # Headline only: the screen moves up and grows into the space, keeping
+        # the same small margin at the bottom.
+        top = y + int(50 * scale)
+        aspect = screen.width / screen.height
+        shot_w = min(int(width * 0.9), int((size[1] - top - int(60 * scale)) * aspect))
 
     # The screen fills the rest, centred, with a soft shadow.
-    shot_w = int(width * 0.84)
     screen = screen.resize((shot_w, int(screen.height * shot_w / screen.width)), Image.LANCZOS)
     screen = rounded(screen, int(56 * scale))
     x = (width - shot_w) // 2
@@ -363,7 +374,8 @@ def cmd_verify(cfg, args):
     for store, out in cfg.get("outputs", {}).items():
         cap = out.get("max", STORE_MAX.get(store))
         if cap and len(chosen) > cap:
-            problems.append(f"{len(chosen)} selected, but {store} takes at most {cap}")
+            # Not a problem: each store gets the first shots it can take.
+            print(f"Note: {len(chosen)} selected; {store} takes at most {cap}, so it gets 1–{cap}.")
     if problems:
         sys.exit("Problems:\n" + "\n".join(f"  - {p}" for p in problems))
 
@@ -416,10 +428,13 @@ def cmd_compose(cfg, args):
         for old in folder.glob(re.sub(r"\{[^}]*\}", "*", pattern)):
             old.unlink()
         size = tuple(out["size"])
-        for n, (raw, shot) in enumerate(chosen, start=1):
+        # A store that takes fewer shots gets the first ones, in order.
+        cap = out.get("max", STORE_MAX.get(key))
+        shots = chosen[:cap] if cap else chosen
+        for n, (raw, shot) in enumerate(shots, start=1):
             name = pattern.format(n=n, id=raw.id, stem=raw.path.stem)
             compose(cfg, raw, shot, size).save(folder / name, optimize=True)
-        print(f"{key}: {len(chosen)} screenshots, {size[0]}x{size[1]} -> {folder}")
+        print(f"{key}: {len(shots)} screenshots, {size[0]}x{size[1]} -> {folder}")
 
 
 def cmd_web(cfg, args):
@@ -441,7 +456,7 @@ def cmd_web(cfg, args):
         listing.append({
             "src": f"{web['url_prefix'].rstrip('/')}/{name}",
             "title": plain(shot.get("web_title", shot["headline"])),
-            "caption": shot.get("web_caption", shot["subline"]),
+            "caption": shot.get("web_caption", shot.get("subline", "")),
         })
     print(f"{len(listing)} website images -> {folder}", file=sys.stderr)
     print(json.dumps(listing, indent=2, ensure_ascii=False))

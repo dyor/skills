@@ -1,0 +1,18 @@
+{
+  "journey": "Restore a saved Factory script",
+  "device": "Pixel 9 Pro emulator (emulator-5554)",
+  "app": "Factory Video Studio, Kotlin Toolchain Android target",
+  "result": "PASSED",
+  "results": [
+    {"action":"Verify the Factory home screen shows the empty workspace and Start a script action","status":"PASSED","commands":["android layout --device emulator-5554 --pretty"],"comment":"The empty workspace and Start a script action were visible."},
+    {"action":"Tap Start a script","status":"PASSED","commands":["adb -s emulator-5554 shell input tap 640 1608"],"comment":"Script editor opened."},
+    {"action":"Tap Script title and check that the title field has focus","status":"PASSED","commands":["adb -s emulator-5554 shell input tap 316 888","android layout --device emulator-5554 --pretty"],"comment":"The title field exposed focused state."},
+    {"action":"Enter Saved draft test in the Script title field","status":"PASSED","commands":["adb -s emulator-5554 shell input text 'Saved%sdraft%stest'","android layout --device emulator-5554 --pretty"],"comment":"The title appeared in the editor."},
+    {"action":"Tap Your words and check that the script body field has focus","status":"PASSED","commands":["adb -s emulator-5554 shell input tap 325 1128","android layout --device emulator-5554 --pretty"],"comment":"The body field exposed focused state."},
+    {"action":"Enter A quick local script for relaunch in Your words","status":"PASSED","commands":["adb -s emulator-5554 shell input text 'A%squick%slocal%sscript%sfor%srelaunch'","android layout --device emulator-5554 --pretty"],"comment":"The full body text appeared in the editor."},
+    {"action":"Verify the editor shows Saved on this device","status":"PASSED","commands":["android layout --device emulator-5554 --pretty"],"comment":"The save status was visible after the debounced local write."},
+    {"action":"Force-stop and relaunch the app","status":"PASSED","commands":["adb -s emulator-5554 shell am force-stop com.dyor.videostudio","adb -s emulator-5554 shell monkey -p com.dyor.videostudio 1"],"comment":"The process exited and the main activity relaunched."},
+    {"action":"Verify the Factory home screen shows the saved title and body","status":"PASSED","commands":["android layout --device emulator-5554 --pretty"],"comment":"The script card showed Saved draft test and A quick local script for relaunch after process restart."},
+    {"action":"Tap Continue writing and verify the editor contains the same title and body","status":"PASSED","commands":["adb -s emulator-5554 shell input tap 640 1500","android layout --device emulator-5554 --pretty"],"comment":"The restored title and body appeared in their editor fields."}
+  ]
+}

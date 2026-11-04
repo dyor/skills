@@ -1,7 +1,7 @@
 ---
 name: dyor-knowledge-base
 description: A summary of all names and descriptions of skills in the dyor/skills repository, used to guide importing relevant skills.
-version: 1.4.0
+version: 1.5.0
 ---
 
 # Skill: dyor-knowledge-base
@@ -33,6 +33,18 @@ This skill acts as a repository of knowledge about available skills in the `dyor
   - **Description**: Bootstraps a new KMP project by cloning a specified GitHub template repository into a new directory, seeding it with core AI skills, stripping its git history, and initializing a fresh workspace.
   - **URL**: `https://github.com/dyor/skills/tree/main/bootstrap-kmp-template`
 
+- **`build-operator`** (Mac only)
+  - **Description**: Builds "Operator", a keyboard-first macOS launcher for every project in a projects folder: git status on each row, open a coding-agent session / continue the last one / Finder / Terminal, and one reviewed GitHub button (Push on main, Merge → main on a branch, Pull when behind). Plain Swift package, no Xcode project. Say "build my Operator" or `/dyor-knowledge-base operator`.
+  - **URL**: `https://github.com/dyor/skills/tree/main/build-operator`
+
+- **`build-publisher`** (Mac only)
+  - **Description**: Builds "Publisher", a macOS app for shipping to Google Play and the App Store/TestFlight without a terminal: pre-flight checks, safe version codes, one-click Build & Upload to internal, promote to closed/production, store-listing diff and upload, TestFlight and App Review, publish lock, and a ready-to-publish gate. Bundles the tested fastlane/Ruby/shell scripts. Say `/dyor-knowledge-base publisher`.
+  - **URL**: `https://github.com/dyor/skills/tree/main/build-publisher`
+
+- **`build-runner`** (Mac only)
+  - **Description**: Builds "Runner", a macOS app that builds and runs a KMP/Android/iOS app on a chosen phone, emulator, simulator or paired iPhone with one click and a live log, plus a fast iOS compile check, a build-time chart, and an optional Firebase-functions deploy gate before running on a device. Bundles the run scripts. Say `/dyor-knowledge-base runner`.
+  - **URL**: `https://github.com/dyor/skills/tree/main/build-runner`
+
 - **`compose-migration-hints`**
   - **Description**: A collection of architectural, UI, and workflow guidelines learned from migrating to Android using Jetpack Compose, Room, Koin, and Maps.
   - **URL**: `https://github.com/dyor/skills/tree/main/compose-migration-hints`
@@ -48,6 +60,10 @@ This skill acts as a repository of knowledge about available skills in the `dyor
 - **`generate-code-review`**
   - **Description**: Generates a comprehensive Markdown Change Review document by aggregating journey reports, grading contexts, key architectural decisions, and a pre-publishing checklist. Features optional Git integration and scope-based historical summaries.
   - **URL**: `https://github.com/dyor/skills/tree/main/generate-code-review`
+
+- **`google-play-publishing`**
+  - **Description**: How publishing and testing on Google Play behaves (internal/closed/production tracks, tester invites, why tracks can't be deleted and old builds must be kept current in one edit, API quirks, declarations like AD_ID and health), plus a TestFlight comparison and guidance for public beta copy. Learned shipping Golf Sparks.
+  - **URL**: `https://github.com/dyor/skills/tree/main/google-play-publishing`
 
 - **`implement-native-firebase-kmp`** (Experimental)
   - **Description**: Guides the implementation of Firebase in a KMP project using native platform SDKs (Android/iOS) via Interface Injection, avoiding third-party KMP wrappers. *Note: Experimental/untested.*

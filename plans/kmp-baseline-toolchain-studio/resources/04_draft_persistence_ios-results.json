@@ -1,0 +1,18 @@
+{
+  "journey": "Restore a saved Factory script on iOS",
+  "device": "iPhone 17 Pro simulator (iOS 26.5)",
+  "app": "Factory Video Studio, Kotlin Toolchain iOS target",
+  "result": "PASSED",
+  "results": [
+    {"action":"Open Factory app and verify empty workspace","status":"PASSED","commands":["./kotlin run -m iosApp -p iosSimulatorArm64 -d 37E5A75D-C496-4824-BC4A-460BD19C489D"],"comment":"The Factory home screen appeared with an empty workspace."},
+    {"action":"Tap Start a script","status":"PASSED","commands":["Simulator accessibility click: Start a script"],"comment":"The shared script editor opened."},
+    {"action":"Enter Saved iOS draft in Script title","status":"PASSED","commands":["Simulator accessibility typeText: Saved iOS draft"],"comment":"The title field displayed the entered title."},
+    {"action":"Enter A script restored on iOS in Your words","status":"PASSED","commands":["Simulator accessibility typeText: A script restored on iOS"],"comment":"The body field displayed the entered script."},
+    {"action":"Verify Saved on this device status","status":"PASSED","commands":["Simulator accessibility tree inspection"],"comment":"The debounced save status appeared."},
+    {"action":"Tap Done for now","status":"PASSED","commands":["Simulator accessibility click: Done for now"],"comment":"The app returned to Factory home and showed the saved draft card."},
+    {"action":"Terminate and relaunch app process","status":"PASSED","commands":["xcrun simctl terminate 37E5A75D-C496-4824-BC4A-460BD19C489D com.dyor.videostudio","xcrun simctl launch 37E5A75D-C496-4824-BC4A-460BD19C489D com.dyor.videostudio"],"comment":"The iOS process exited and launched again."},
+    {"action":"Verify the home screen shows saved title and body","status":"PASSED","commands":["Simulator accessibility tree and screenshot inspection"],"comment":"After relaunch, the draft card showed Saved iOS draft and A script restored on iOS."},
+    {"action":"Tap Continue writing and verify restored fields","status":"PASSED","commands":["Simulator accessibility click: Continue writing"],"comment":"The saved editor values are available for continued editing."}
+  ],
+  "evidence": "plans/kmp-baseline-toolchain-studio/evidence/ios-draft-persistence.png"
+}

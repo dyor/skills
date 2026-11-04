@@ -1,0 +1,21 @@
+{
+  "journey": "Read a script in the teleprompter",
+  "device": "Pixel 9 Pro emulator (emulator-5554)",
+  "app": "Factory Video Studio, Kotlin Toolchain Android target",
+  "result": "PASSED",
+  "note": "The app was rebuilt after fixing the zero-scroll-range state handling. The long test script provided a scrollable region. One literal percent in the fixture came from a mistyped adb text escape; it did not affect control assertions.",
+  "results": [
+    {"action":"Verify Factory home and Start a script are visible","status":"PASSED","commands":["android layout --device emulator-5554 --pretty"],"comment":"Factory home and primary script action were visible."},
+    {"action":"Tap Start a script","status":"PASSED","commands":["adb -s emulator-5554 shell input tap 640 1608"],"comment":"Script editor opened."},
+    {"action":"Tap Script title and check it has focus","status":"PASSED","commands":["adb -s emulator-5554 shell input tap 316 888","android layout --device emulator-5554 --pretty"],"comment":"The title text field exposed focused state."},
+    {"action":"Enter Teleprompter test in the Script title field","status":"PASSED","commands":["adb -s emulator-5554 shell input text 'Teleprompter%stest'","android layout --device emulator-5554 --pretty"],"comment":"The title appeared as Teleprompter test."},
+    {"action":"Tap Your words and check the field has focus","status":"PASSED","commands":["adb -s emulator-5554 shell input tap 325 1128","android layout --device emulator-5554 --pretty"],"comment":"The body field exposed focused state."},
+    {"action":"Enter and verify a long script body","status":"PASSED","commands":["adb -s emulator-5554 shell input text '<long sample script with Android %s space escapes>'","android layout --device emulator-5554 --pretty"],"comment":"A nonempty script was visible in the editor and produced a scrollable reader region."},
+    {"action":"Tap Read in teleprompter and verify controls","status":"PASSED","commands":["adb -s emulator-5554 shell input tap 640 1932","android layout --device emulator-5554 --pretty"],"comment":"Reader, text size, scroll speed, Start scrolling, and Back to beginning controls were visible."},
+    {"action":"Tap A+ and verify text size changes from 36sp to 40sp","status":"PASSED","commands":["adb -s emulator-5554 shell input tap 1043 1930","android layout --device emulator-5554 --pretty"],"comment":"Displayed size changed from 36sp to 40sp."},
+    {"action":"Start scrolling and verify the control changes to Pause scrolling","status":"PASSED","commands":["adb -s emulator-5554 shell input tap 640 2314","android layout --device emulator-5554 --pretty"],"comment":"With long content, the script scrolled and the button label became Pause scrolling."},
+    {"action":"Pause scrolling","status":"PASSED","commands":["adb -s emulator-5554 shell input tap 640 2314","android layout --device emulator-5554 --pretty"],"comment":"The control returned to Start scrolling."},
+    {"action":"Tap Back to beginning","status":"PASSED","commands":["adb -s emulator-5554 shell input tap 640 2506","android layout --device emulator-5554 --pretty"],"comment":"The reader returned to the first script lines."},
+    {"action":"Tap Script and verify the editor returns","status":"PASSED","commands":["adb -s emulator-5554 shell input tap 269 312","android layout --device emulator-5554 --pretty"],"comment":"Write your script and the draft fields were visible again."}
+  ]
+}

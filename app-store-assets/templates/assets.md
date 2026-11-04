@@ -27,7 +27,7 @@ specific to this app lives here. Edit this file, not the skill.
     },
     "play": {
       "dir": "distribution/android/playstore_metadata/en-US/images/phoneScreenshots",
-      "size": [1440, 2880],
+      "size": [1620, 2880],
       "name": "{n}.png"
     }
   },
@@ -66,8 +66,8 @@ from the file names in the newest dated folder under `media_dir` (the working se
 `1_home.png`, `2_main-feature.png` are published in that order; `extra_<id>.png` are
 candidates. Older dated folders are history.
 
-Sizes: 1290x2796 is the App Store's iPhone 6.9" size; Play accepts at most a 2:1 ratio,
-hence 1440x2880. Remove `website` if the app has no site, or `text` entries you don't use.
+Sizes: 1290x2796 is the App Store's iPhone 6.9" size. Play phone screenshots need a
+ratio between 9:16 and 16:9, hence 1620x2880 (9:16); a taller 1:2 image is rejected. Remove `website` if the app has no site, or `text` entries you don't use.
 
 ## Notes for the agent
 

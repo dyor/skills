@@ -1,7 +1,7 @@
 ---
 name: app-store-assets
 description: Refresh an app's store and website assets from a pool of phone screenshots. Use when the user says "update screenshots", "update_screenshots", "refresh store screenshots", "new App Store / Play screenshots", "choose / reorder the screenshots", or asks to update store listing text or the app website's screenshots. Today's capture folder is the working set; its file names pick what is published and in what order (1_home.png, 2_coach.png; extra_* are candidates). Older folders are history. Produces captioned App Store and Google Play screenshots, checks listing text against store limits, and updates the website's screenshot gallery and copy. App-specific settings live in the app repo (distribution/assets.md), never in this skill.
-version: 1.2.0
+version: 1.3.0
 ---
 
 # Skill: App Store Assets
@@ -50,8 +50,9 @@ In the working set, **file names decide what is published**:
 - **Replace** a screen: save over its file in the working set. **Select** a candidate:
   copy it in as `<n>_<id>`. **Drop:** rename to `extra_<id>` (or delete the working
   copy; history keeps the old one). **Reorder:** change the numbers in the working set.
-- Stores cap the count: App Store 10, Google Play 8 phone screenshots. The first two
-  or three are the ones people see in search results.
+- Stores cap the count: App Store 10, Google Play 8 phone screenshots. Select up to
+  the largest cap; a store that takes fewer gets the first ones (Play gets 1–8 of 10).
+  The first two or three are the ones people see in search results.
 
 ## The app config
 
@@ -119,7 +120,7 @@ When the user says they're done:
 
 ### 3. Captions
 
-Every published id needs `headline` and `subline` in the config's `shots`. `verify`
+Every published id needs a `headline` in the config's `shots`, and a `subline` unless the style sets `"sublines": false` (sublines also caption the website). `verify`
 lists those missing. For new or changed screens, write or check them and propose a short
 before/after list; `*starred*` words are drawn in the accent colour. Write approved
 changes into `shots`. Entries for ids not in the pool are harmless: keep them, since an
@@ -169,7 +170,7 @@ Store Connect or Google Play; that's the app's release tooling (fastlane
 | Command | Does |
 |---|---|
 | `checklist` | Creates today's working set (seeded with the published set) and `SHOTLIST.md`; prints the folder. |
-| `verify` | The working set's published shots in order, candidates, unsorted files, with size checks. Fails on duplicate numbers, missing captions, an empty selection, or more shots than a store takes. |
+| `verify` | The working set's published shots in order, candidates, unsorted files, with size checks. Fails on duplicate numbers, missing captions or an empty selection; notes when a store will get only the first shots. |
 | `sheet` | Writes `<media_dir>/contact-sheet.png`: published shots outlined, then candidates. |
 | `compose` | Writes captioned screenshots for every entry in `outputs`. |
 | `web` | Writes website images; prints the `[{src, title, caption}]` list as JSON. |
@@ -183,8 +184,8 @@ See `templates/assets.md` for a complete example. Fields:
 |---|---|
 | `app` | Display name. |
 | `media_dir` | Folder of dated capture folders (default `distribution/media`). |
-| `style` | `background`, `headline`, `accent`, `subline` (hex), `font` (path to .ttf/.ttc), `headline_font_index`, `subline_font_index`, `status_bar_px` (rows cropped off the top of each raw shot). |
-| `outputs` | One entry per store size: `dir`, `size` `[w, h]`, `name` pattern (`{n}`, `{n:02d}`, `{id}`, `{stem}` = raw file's name), optional `max` (count limit; defaults: `ios` 10, `play` 8). |
+| `style` | `background`, `headline`, `accent`, `subline` (hex), `font` (path to .ttf/.ttc), `headline_font_index`, `subline_font_index`, `status_bar_px` (rows cropped off the top of each raw shot), `sublines` (default true; false puts only the headline on the images and gives the screen the space, while sublines still caption the website). |
+| `outputs` | One entry per store size: `dir`, `size` `[w, h]`, `name` pattern (`{n}`, `{n:02d}`, `{id}`, `{stem}` = raw file's name), optional `max` (how many it takes; defaults: `ios` 10, `play` 8; it gets the first ones). |
 | `text` | `ios` and/or `play`: folder of fastlane-style listing text files. |
 | `website` | `provider`, `site`, `static_repo`, `static_dir`, `url_prefix`, `width` (default 1179), `jpeg_quality` (default 85). |
 | `shots[]` | The caption library, keyed by `id` (order doesn't matter; file names set the order). `id`, `screen` (what to capture), `headline`, `subline`, optional `blur` boxes, `web` (false to skip on the site), `web_title`/`web_caption` overrides. |

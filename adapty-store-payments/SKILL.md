@@ -30,7 +30,7 @@ The most common wrong belief: "purchases can't work until the app is live". They
 | App Store | Any TestFlight tester, or a Sandbox Apple ID on a development build | Every TestFlight purchase is a sandbox purchase automatically | No |
 | Google Play | Accounts on **Play Console → Settings → License testing** | Install from an internal/closed track, buy with the test card | No |
 
-- Adapty reports both as `environment: "Sandbox"` on the webhook (**verified** on Android).
+- Adapty reports both as `environment: "Sandbox"` on the webhook (**verified** on both stores). Play transaction ids start `GPA.`; Apple's are all digits.
 - Android needs a real device whose Play Store account is a license tester, with the app installed **from the Play track** (not sideloaded) (**verified** working that way; **unverified** that a sideloaded build fails, but it is Google's documented rule).
 - License testers: create a dedicated email list (for example "Purchase testers") under License testing. Play may pre-tick your internal-testers list there too; untick it unless every internal tester should buy for free.
 - Apple's reviewer also buys in sandbox. Anything you do to sandbox purchases, you do to App Review.
@@ -75,7 +75,7 @@ Product IDs carry the amount (`credit_pack_60`, `credit_pack_60_v2` after a pric
 Use an ordinary account (not a debug/unlimited one), on the exact build you will submit (Android: the release AAB with R8 on, since R8 can strip billing classes). Record each result in the app's state file.
 1. Open the shop: real prices from the store appear, not your placeholders.
 2. Buy the smallest pack: the store sheet says sandbox/test; credits arrive within seconds; a ledger doc appears with `environment: Sandbox`.
-3. **Buy the same pack again.** "You already own this item" (Play) means it was acknowledged instead of consumed: fix the Adapty product type (section 2). A second ledger doc with a new transaction id means consumption works (**verified** on Android).
+3. **Buy the same pack again.** "You already own this item" (Play) means it was acknowledged instead of consumed: fix the Adapty product type (section 2). A second ledger doc for the same account and store, with a new transaction id, means consumption works. Check the store and account on each doc: two purchases close together can be two testers on different stores.
 4. Refund it (Play Console → Order management; iOS: sandbox refund request): the refund event arrives and the credits come off.
 5. Kill the app mid-purchase, reopen: no double credit, no lost credit.
 6. Check the webhook's "Last sent events" in Adapty: all Success.
