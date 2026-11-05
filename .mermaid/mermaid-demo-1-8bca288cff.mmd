@@ -1,0 +1,30 @@
+flowchart TD
+    subgraph Input ["Source Input"]
+        MD["Markdown Document<br/>with mermaid block"]
+    end
+
+    subgraph Processing ["Processing Pipeline"]
+        MCP["MCP Tool / CLI<br/>(md-mermaid)"]
+        CHROME["Headless Chrome + mmdc<br/>(Mermaid CLI)"]
+        SIPS["macOS sips<br/>(Resample to 1500px)"]
+    end
+
+    subgraph Output [".mermaid/ Directory"]
+        FULL_PNG["Full-Size Retina PNG<br/>(*-full.png)"]
+        VIEW_PNG["Scaled Preview PNG<br/>(*.png)"]
+        MMD["Clean Source<br/>(*.mmd)"]
+    end
+
+    subgraph Studio ["Android Studio"]
+        PREVIEW["Compose Markdown Preview<br/>(Embedded Image & Links)"]
+    end
+
+    MD --> MCP
+    MCP --> CHROME
+    CHROME --> FULL_PNG
+    FULL_PNG --> SIPS
+    SIPS --> VIEW_PNG
+    MCP --> MMD
+    VIEW_PNG --> PREVIEW
+    FULL_PNG -.->|Clickable Link| PREVIEW
+    MMD -.->|Source Link| PREVIEW
