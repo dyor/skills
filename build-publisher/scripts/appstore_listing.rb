@@ -63,7 +63,7 @@ def local_screenshots(dir)
     .group_by { |p| display_type(p) || "UNKNOWN" }
 end
 
-Spaceship::ConnectAPI.auth(key_id: key_id, issuer_id: issuer_id, filepath: key_path)
+Spaceship::ConnectAPI.auth(key_id: key_id, issuer_id: issuer_id, filepath: File.expand_path(key_path))
 app = Spaceship::ConnectAPI::App.find(bundle_id) or (out({ "error" => "No app for #{bundle_id} in App Store Connect" }); exit 0)
 platform = Spaceship::ConnectAPI::Platform::IOS
 

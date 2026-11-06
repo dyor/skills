@@ -1,7 +1,7 @@
 ---
 name: build-operator
 description: Build "Operator", a keyboard-first macOS launcher for every project in a projects folder (~/Projects/<category>/<project>). One window lists all projects with git status; each row opens a coding-agent session in that folder, continues the last session, opens Finder/Terminal/Android Studio, and ships to GitHub with one reviewed button (Push on main, Merge → main on a branch, Pull when behind). Plain Swift package, no Xcode project. Use when the user says "build Operator", "set up my Operator", "project launcher for my Mac", or asks for /dyor-knowledge-base operator. Mac only. Companion skills - build-runner and build-publisher.
-version: 1.0.0
+version: 1.1.0
 ---
 
 # Build Operator
@@ -26,8 +26,9 @@ Ask these in one message, with the default in brackets. Do not proceed on guesse
 2. **Where should the Operator source live?** [`<root>/local/Operator`, or `~/Operator`].
 3. **Coding agent.** Which should the main click open? [Claude Code desktop app via
    `claude://code/new?folder=<path>`]. Alternatives: `claude` CLI in Terminal; another CLI
-   (Codex, Gemini, Jetski) run in Terminal as `cd '<path>' && <command>`. Make this a single
-   `agent` setting in config so it is easy to change.
+   (Codex, Gemini) run in Terminal as `cd '<path>' && <command>`. Make this a single
+   `agent` setting in config (`"claude-desktop"` default, or any CLI command string) so it is
+   easy to change.
 4. **Which optional buttons do they want?** Android Studio (only if they do Android/KMP),
    Codex button, Digest, local dev servers. Build only the ones they name; the rest is noise.
 5. **Bundle id prefix** (for `CFBundleIdentifier`, e.g. `com.theirname.operator`) and whether
@@ -57,19 +58,35 @@ daemon.
   for worktrees, so test existence, not directory-ness), `branch`, `latestSession`, plus
   optional links to Runner and Publisher (below).
 - **Branch without spawning git**: read `<path>/.git/HEAD`; if it starts `ref: refs/heads/`
-  the rest is the branch. Detached HEAD and worktrees give nil. Scanning stays instant even
-  with 100 projects.
-- **Config**: read `~/.config/operator/config.json` (or `config.json` beside the app, or
-  `$OPERATOR_CONFIG`). Fields: `root`, `agent`, and optional per-project maps (below). Missing
-  file means defaults, never an error.
+  the rest is the branch — **except** `ref: refs/heads/.invalid` (written by Git 2.45+ / Xcode
+  `reftable` repos as a compatibility stub), which must return `nil` so the background
+  `git branch --show-current` populates the real branch name. Detached HEAD and worktrees also
+  give `nil`. Scanning stays instant even with 100 projects.
+- **Config**: resolve in order `$OPERATOR_CONFIG`, `~/.config/operator/config.json`,
+  `<OperatorSourceDir>/config.json` (read `OperatorSourceDir` from `Info.plist` so
+  `/Applications/Operator.app` still finds the checkout's `config.json` and `rebuild.sh`), or
+  `config.json` beside the `.app`. Missing file means defaults, never an error:
+  ```json
+  {
+    "root": "~/Projects",
+    "agent": "claude-desktop",
+    "devServers": {
+      "local/my-web-app": { "command": "npm run dev", "port": 3000, "dir": "web" }
+    }
+  }
+  ```
+  Key `devServers` by `<category>/<project>` (falling back to `<project>`) so identically named
+  folders in different categories do not collide; `dir` is optional (relative to project root).
 
 ### Git status on every git project (`GitOverview`)
 
 Read-only, local, and fast; run it on a background queue and publish into the model.
 
 - Branch: `git branch --show-current` (empty means detached, show `detached at <short sha>`).
-- Changed files: `git status --porcelain -z` (split on NUL; for renames take the part after
-  ` -> `).
+- Changed files: `git status --porcelain -z`. With `-z`, records are NUL-terminated and git
+  **never** writes ` -> `: renames/copies (`R` or `C` in column 1 or 2) emit **two** NUL
+  tokens (`XY new_path\0old_path\0`), so consume and skip the second token instead of treating
+  `old_path` as its own status entry.
 - Ahead/behind: `git rev-list --left-right --count HEAD...@{upstream}`. No upstream means
   show "no upstream".
 - Possible overlap: when both ahead and behind, intersect the files in
@@ -113,8 +130,11 @@ Give each state a distinct tooltip that says what will happen.
   `.mobileprovision`, `secret`, `credential`, `password`, show "⚠️ N files look like a
   secret" and list those files individually even if they would have been folded.
 - A commit-message text field (only when there are changes). Empty means "Update".
-- On confirm, in Terminal: `cd '<path>' && git add -A && git commit -m '<msg>' && git push -u
-  origin HEAD && open https://github.com/<owner/repo>/actions`.
+- On confirm, in Terminal: if there are uncommitted changes, run `cd '<path>' && git add -A &&
+  git commit -m '<msg>' && git push -u origin HEAD && open https://github.com/<owner/repo>/actions`;
+  if the working tree is clean (`ahead > 0` or no upstream), skip `git add`/`git commit` and
+  run `cd '<path>' && git push -u origin HEAD && open https://github.com/<owner/repo>/actions`
+  (`git commit` exits 1 on a clean tree and would otherwise abort the push).
 
 **Merge → main review** (a project on a branch):
 - Compute the target (`main` if `refs/heads/main` exists, else `master`).
@@ -136,7 +156,7 @@ Show a button only when it applies. Primary click on the row, or ⌘N:
 
 | Button | When | Action |
 |---|---|---|
-| Row click / agent chip | always | New agent session in the folder. Claude desktop: open `claude://code/new?folder=<path>&source=operator`. CLI agents: Terminal `cd '<path>' && clear && <agent command>` |
+| Row click / agent chip | always | New agent session in the folder. Claude desktop: open `claude://code/new?folder=<path>&source=operator`. CLI agents: Terminal `cd '<path>' && clear && (type update_terminal_cwd >/dev/null 2>&1 && update_terminal_cwd; printf '\e]1;%s\a' "${PWD##*/}") && <agent command>` so Terminal sets both the tab working directory and tab title to the project name |
 | ↻ Continue | a session exists | `claude://code/continue?session=<id>`. See "Finding sessions" |
 | Studio | category is `kmp`, or user asked for Android | `open -a "Android Studio" <path>` (prefer "Android Studio Preview" if installed) |
 | MobileApp | `<path>/MobileApp` exists | same, on that subfolder |
@@ -153,22 +173,28 @@ Controls wrap onto a second line instead of squeezing (a small custom `Layout` t
 right-aligns children and flows to new rows works well; SwiftUI's built-in stacks do not
 wrap).
 
-**Matching a project to Runner/Publisher**: read each tool's `config.json`
-(`projects` for Publisher, `apps` for Runner), take each app's `appDir` (expand `~`), and
-attach it to the project whose path equals `appDir` or is a prefix of it. Many apps keep the
-Android app in a `MobileApp/` subfolder, so the prefix match matters. App Store-only apps have
-no `packageName`; fall back to `ios.bundleId`. If neither config exists, those buttons
-simply never appear.
+**Matching a project to Runner/Publisher**: locate each sibling tool's `config.json` in order:
+`$<TOOL>_CONFIG` (`RUNNER_CONFIG` / `PUBLISHER_CONFIG`), `<root>/local/<Tool>/config.json`,
+`~/<Tool>/config.json`, `~/.config/<tool>/config.json`. Read `projects` for Publisher and
+`apps` for Runner, take each entry's `appDir` (expand `~`), and attach it to the project whose
+path equals `appDir` or is a **directory-bounded** prefix of it (`appDir == project.path ||
+appDir.hasPrefix(project.path + "/")` — always require the trailing `"/"` so `MyApp-OG` or
+`myapp-kmp` never matches `MyApp` / `myapp`). Many apps keep the mobile app in a `MobileApp/`
+subfolder, so the bounded prefix match matters. App Store-only apps have no `packageName`; fall
+back to `ios.bundleId`. When opening `runner://` or `publisher://`, look for `<Tool>.app` beside
+the resolved `config.json` (else `/Applications/<Tool>.app`) and pass it to
+`NSWorkspace.shared.open(_:withApplicationAt:configuration:)` so the link works even before
+LaunchServices has indexed the bundle. If neither config exists, those buttons never appear.
 
 ### Finding sessions (Claude desktop app)
 
 The Claude desktop app keeps one JSON file per Code session under
 `~/Library/Application Support/Claude/claude-code-sessions/**/local_*.json`, with `sessionId`,
 `originCwd` (or `cwd`), `title`, `lastActivityAt` (milliseconds) and `isArchived`. Pick the
-newest unarchived session per folder, counting sessions whose cwd is a *subfolder* of the
-project (worktrees live under it). **This is an internal format, not a public API.** Treat
-every field as optional; on any surprise the Continue button disappears and everything else
-keeps working. Say so in a code comment.
+newest unarchived session per folder, counting sessions whose cwd equals `project.path` or
+starts with `project.path + "/"` (worktrees live under it). **This is an internal format, not a
+public API.** Treat every field as optional; on any surprise the Continue button disappears and
+everything else keeps working. Say so in a code comment.
 
 ### Header
 
@@ -205,7 +231,9 @@ Hard-won details:
   git calls; read stdout fully *before* `waitUntilExit()` to avoid a pipe-buffer deadlock.
 - Run all git scans off the main thread; publish results on main.
 - The key monitor (`NSEvent.addLocalMonitorForEvents(matching: .keyDown)`) handles Esc
-  (keyCode 53) and ⌘1-⌘9 by indexing the *filtered, flattened* list shown on screen.
+  (keyCode 53) and ⌘1-⌘9 by indexing the *filtered, flattened* list shown on screen. Guard
+  `NSApp.modalWindow == nil` first so pressing Esc inside a Push or Merge `NSAlert` cancels the
+  modal dialog instead of quitting Operator.
 - Put `NSAppleEventsUsageDescription` in Info.plist; the first Terminal action triggers a
   macOS automation permission prompt that the user must accept once.
 - `--list` output should include, per project, which buttons would show. It is the

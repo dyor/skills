@@ -71,6 +71,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 Give the app a main menu (Quit, and an Edit menu with Copy / Select All so ⌘C works in log
 views). An `NSApplication` with no `mainMenu` has no ⌘Q.
 
+Because the window uses `.fullSizeContentView` with `titlebarAppearsTransparent = true`, add
+~36 pt of top inset on the sidebar/header so the close/minimize/zoom traffic-light buttons do
+not overlap your controls.
+
 A `--list` style flag in `main.swift` that prints what the window would show and exits is
 worth adding to every app. It lets you (and an agent) verify discovery logic headlessly,
 without screenshots.
@@ -123,12 +127,18 @@ PLIST
 
 # Ad-hoc signature so macOS runs it locally without Gatekeeper complaints.
 codesign --force --deep --sign - "$APP" >/dev/null 2>&1 || true
+# Register custom URL scheme (appname://) immediately so sibling apps can open it before first launch.
+/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f "$PWD/$APP" >/dev/null 2>&1 || true
 echo "Built $(pwd)/$APP"
 ```
 
-Operator additionally copies the bundle into `/Applications` so Spotlight finds it. The
-bundle is ad-hoc signed and **not notarized**: it runs on the Mac that built it. To share the
-app with another Mac, they build it from the same skill.
+Operator additionally copies the bundle into `/Applications` so Spotlight finds it (and
+re-runs `lsregister -f "/Applications/$APP"`). Because copying `Operator.app` to
+`/Applications` separates it from the source checkout, write `<key>OperatorSourceDir</key>`
+with `$(pwd)` into `Info.plist` at build time (using an unquoted heredoc or `PlistBuddy`) so
+`/Applications/Operator.app` can still locate `<checkout>/config.json` and `<checkout>/rebuild.sh`.
+The bundle is ad-hoc signed and **not notarized**: it runs on the Mac that built it. To share
+the app with another Mac, they build it from the same skill.
 
 Scripts are copied into the bundle at build time. Edit the copy in the project folder and
 rebuild; never edit the one inside the `.app`. At run time the app looks for
@@ -157,10 +167,19 @@ The quit step uses the bundle id, not the name, so it works however the app is r
 
 All three apps shell out in the same ways. Build one small `Launcher` helper:
 
-- **Terminal command**: `osascript -e 'tell application "Terminal" to activate' -e 'do script "<cmd>"'`.
-  Escape backslashes and double quotes for AppleScript, and single-quote every path for the
-  shell (`'` becomes `'\''`). Use this whenever the user should *see* the output, such as
-  git push, merge, pull, `npm run dev`. It also makes a failed merge or an auth prompt visible.
+- **Terminal command**:
+  `osascript -e 'tell application "Terminal"' -e 'activate' -e 'do script "<cmd>"' -e 'end tell'`
+  (do **not** write `-e 'tell application "Terminal" to activate' -e 'do script ...'`: a
+  one-line `tell ... to` closes its `tell` block, causing `do script` to fail with an
+  AppleScript syntax error). Escape backslashes and double quotes for AppleScript, and
+  single-quote every path for the shell (`'` becomes `'\''`). Use this whenever the user
+  should *see* the output, such as git push, merge, pull, or `npm run dev`.
+  When launching an interactive CLI tool or server inside a project folder (`cd '<path>' && ...`),
+  Terminal never draws a shell prompt before the tool takes over, so the tab title otherwise
+  shows `~` and the last CLI flag instead of the project name. Run:
+  `(type update_terminal_cwd >/dev/null 2>&1 && update_terminal_cwd; printf '\e]1;%s\a' "${PWD##*/}")`
+  right after `cd '<path>' && clear` so `⌘T` opens new tabs in that folder (OSC 7) and the tab
+  title shows the project folder name (OSC 1).
 - **Open a folder in Finder**: `NSWorkspace.shared.open(URL(fileURLWithPath: path))`.
 - **Terminal at a folder**: `/usr/bin/open -a Terminal <path>`.
 - **Another app, with a link**: build a `URLComponents` with `scheme`, `host`, `queryItems`
@@ -168,22 +187,33 @@ All three apps shell out in the same ways. Build one small `Launcher` helper:
   to `open(_:withApplicationAt:configuration:)` so the link goes to *that* build even when
   LaunchServices knows an older copy.
 - **Background process with streamed output** (Runner, Publisher): see their skills. Run via
-  `/bin/zsh -lc` so Homebrew, rbenv, JAVA_HOME and the Android SDK match Terminal.
+  `/bin/zsh -lc` so login profile settings apply — **but** note that macOS `/etc/zprofile` runs
+  `/usr/libexec/path_helper -s` (which reorders `/usr/bin` ahead of Homebrew even if
+  `Process.environment["PATH"]` was set) and `-lc` skips `~/.zshrc`. Prepend tool paths
+  **inside** the `-lc` command string:
+  `export PATH="/opt/homebrew/opt/ruby/bin:/usr/local/opt/ruby/bin:$HOME/.rbenv/shims:/opt/homebrew/bin:/usr/local/bin:$PATH";`
 
 Child processes need a pipe for stdout and stderr, `standardInput = FileHandle.nullDevice`
 (a tool that tries to prompt then fails fast instead of hanging forever), and
 `readabilityHandler` to append output to the model on the main queue.
 
+**SwiftUI/AppKit gotcha on macOS 26+**: do not attach SwiftUI `.help(...)` modifiers to views
+inside a custom `Layout` (such as a wrapping `FlowLayout`) hosted in `NSHostingView`; doing so
+can trigger `AttributeGraph: cycle detected` and freeze row updates. Attach `.help()` outside
+the custom `Layout`, or use a tiny `NSViewRepresentable` wrapper that sets AppKit `toolTip`.
+
 ## 6. Icon (optional)
 
-Without an `.icns` the app uses a generic icon, which is fine. To make one: draw a 512x512
-PNG with a small Swift/AppKit script (rounded-rect gradient plus the app's name), then
+Without an `.icns` the app uses a generic icon, which is fine. To make one: draw a 1024x1024
+PNG using an explicit `NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: 1024, pixelsHigh: 1024, ...)`
+and `NSGraphicsContext(bitmapImageRep:)` — **never** `NSImage.lockFocus()`, which multiplies
+dimensions by 2x on a Retina display and produces PNGs that `iconutil` rejects — then
 
 ```zsh
 mkdir AppIcon.iconset
 for s in 16 32 128 256 512; do
-  sips -z $s $s icon_512.png --out AppIcon.iconset/icon_${s}x${s}.png >/dev/null
-  sips -z $((s*2)) $((s*2)) icon_512.png --out AppIcon.iconset/icon_${s}x${s}@2x.png >/dev/null
+  sips -z $s $s icon_1024.png --out AppIcon.iconset/icon_${s}x${s}.png >/dev/null
+  sips -z $((s*2)) $((s*2)) icon_1024.png --out AppIcon.iconset/icon_${s}x${s}@2x.png >/dev/null
 done
 iconutil -c icns AppIcon.iconset -o AppName.icns
 ```

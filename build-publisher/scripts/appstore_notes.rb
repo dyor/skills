@@ -5,7 +5,7 @@
 require "spaceship"
 
 bundle_id, key_id, issuer_id, key_path, build_number, notes_file = ARGV
-Spaceship::ConnectAPI.auth(key_id: key_id, issuer_id: issuer_id, filepath: key_path)
+Spaceship::ConnectAPI.auth(key_id: key_id, issuer_id: issuer_id, filepath: File.expand_path(key_path))
 app = Spaceship::ConnectAPI::App.find(bundle_id) or abort("no app for #{bundle_id}")
 notes = File.read(notes_file, encoding: "UTF-8").strip
 

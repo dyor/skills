@@ -15,7 +15,7 @@ abort("usage: appstore_snapshot.rb <bundleId> <keyId> <issuerId> <keyPath>") unl
 def out(h) = puts(JSON.generate(h))
 
 begin
-  Spaceship::ConnectAPI.auth(key_id: key_id, issuer_id: issuer_id, filepath: key_path)
+  Spaceship::ConnectAPI.auth(key_id: key_id, issuer_id: issuer_id, filepath: File.expand_path(key_path))
   app = Spaceship::ConnectAPI::App.find(bundle_id)
   unless app
     out({ "bundleId" => bundle_id, "exists" => false, "fetchedAt" => Time.now.utc.iso8601 })

@@ -1,7 +1,7 @@
 ---
 name: build-runner
 description: Build "Runner", a macOS app that builds a Kotlin Multiplatform (KMP) or Android/iOS app and runs it on a chosen target - a plugged-in Android phone, a running or bootable emulator, an iPhone simulator, or a paired iPhone - with one click, streaming the build log, plus a fast iOS compile check, a build-time chart, and an optional Firebase functions deploy gate that makes sure the backend is current before running on a device. Plain Swift package; bundled shell scripts do the work. Use when the user says "build Runner", "set up Runner", "one-click run on my phone/simulator", or asks for /dyor-knowledge-base runner. Mac only. Companion skills - build-operator and build-publisher.
-version: 1.0.0
+version: 1.1.0
 ---
 
 # Build Runner
@@ -17,11 +17,11 @@ shell scripts in this skill's `scripts/` folder are tested and should be copied,
 
 ## 0. Before you write anything: ask the user
 
-1. **Which apps?** For each: a name, the folder containing `gradlew` (and `iosApp/` for iOS),
-   and the Android `applicationId`. Runner targets KMP projects shaped like the Koko template:
-   `androidApp` and `shared` Gradle modules, `iosApp/iosApp.xcodeproj`. Ask whether any use
-   different module names (Compose Multiplatform wizard projects use `composeApp`) or an
-   `applicationIdSuffix` on the debug build (for example `.dev`).
+1. **Which apps?** For each: a name, the folder containing `gradlew` or `./kotlin` (and
+   `iosApp/` for iOS), and the Android `applicationId`. Runner targets KMP and native projects:
+   `androidApp` and `shared` Gradle (or Kotlin Toolchain / Amper) modules, `iosApp/iosApp.xcodeproj`.
+   Ask whether any use different module names (Compose Multiplatform wizard projects use
+   `composeApp`) or an `applicationIdSuffix` / side-by-side debug suffix (for example `.dev`).
 2. **Where should Runner's source live?** [`<their projects>/local/Runner` or `~/Runner`].
 3. **Do they need physical iPhones?** If yes, the Xcode project needs a signing team (ask for
    the Team ID, or tell them to open the project in Xcode once and pick it under Signing &
@@ -34,12 +34,16 @@ shell scripts in this skill's `scripts/` folder are tested and should be copied,
 
 Prerequisites to verify, and to tell the user about if missing (do not install system
 software without asking):
-- Xcode command-line tools plus **full Xcode** for iOS builds (`xcodebuild`, `xcrun simctl`,
-  `xcrun devicectl`).
+- Xcode command-line tools plus **full Xcode** for iOS builds (`xcodebuild -version`,
+  `xcrun simctl`, `xcrun devicectl`; check via `xcodebuild`, not `/Applications/Xcode.app`, as
+  versioned bundles like `/Applications/Xcode_26.x.app` are common).
 - Android SDK: `ANDROID_HOME`, `ANDROID_SDK_ROOT`, or `~/Library/Android/sdk`, containing
   `platform-tools/adb` and `emulator/emulator`.
-- A JDK for Gradle (`JAVA_HOME`). Commands run through a login shell so Terminal's
-  environment applies.
+- A Gradle-compatible JDK (17 or 21). If `JAVA_HOME` is only set in `~/.zshrc` (skipped by
+  `/bin/zsh -lc`) or a bleeding-edge JDK (e.g. 27) is installed at `/Library/Java/JavaVirtualMachines`,
+  `/usr/bin/java` picks the highest version and crashes Gradle 8.x (`IllegalArgumentException: 27`).
+  The bundled scripts and `RunModel` resolve a working JDK via `/usr/libexec/java_home -F -v 21`,
+  `-F -v 17`, or `/Applications/Android Studio.app/Contents/jbr/Contents/Home`.
 - `firebase` CLI and `node` only if they use the Firebase gate.
 
 ## 1. The window
@@ -57,9 +61,9 @@ is in progress for a different app.
    **Compile iOS** and **Run on <target>** (primary, ⌘R, disabled while running or with no
    target). Left to right is the workflow: check iOS compiles, then try it on a device.
 2. **Run banner**: only when there is something to say. Running (amber): title, the last
-   non-empty log line, **Cancel**. Succeeded (green) or failed (red, plus the first line that
-   looks like an error: contains a bullet, starts with `e: `, or contains "error"), each with
-   a dismiss button.
+   non-empty log line, **Cancel**. Succeeded (green) or failed (red, plus the first diagnostic
+   error line: starts with `e: `, contains a bullet, follows `* What went wrong:` or `FAILURE:`,
+   or contains `Exception` or `error`), each with a dismiss button.
 3. **Firebase strip** (only for apps with a `firebase` block): see below.
 4. **"Run on" grid**: targets grouped by kind, as tiles in an adaptive grid (min 230 pt).
    Each tile has an icon, name, detail, and a status dot: green when the target is up and
@@ -99,31 +103,43 @@ overrides. Locate it at run time from the bundle's parent folder so the checkout
 Required: `name`, `appDir`, `packageName`. Everything else defaults as shown (`androidApp`,
 `shared`, `iosApp/iosApp.xcodeproj`, `iosApp`, no suffix, project's own team, no Firebase).
 Expand `~` so one config works on every Mac. `id` is `packageName`. A config problem
-(`no gradlew in <dir>`) is shown on the sidebar row and fails the run with a readable message
-rather than failing halfway into Gradle. Icon: the Play listing icon
+(`no gradlew or kotlin wrapper in <dir>`) is shown on the sidebar row and fails the run with a
+readable message rather than failing halfway into a build. Icon: the Play listing icon
 (`distribution/android/playstore_metadata/en-US/images/icon.png`) else
 `<androidModule>/src/*/res/mipmap-xxxhdpi/ic_launcher.{png,webp}`, else a placeholder.
 
-Every run passes the app settings to the scripts as **environment variables**
-(`APP_DIR`, `PACKAGE` = packageName + suffix, `ANDROID_MODULE`, `SHARED_MODULE`,
-`IOS_PROJECT`, `IOS_SCHEME`, optional `DEVELOPMENT_TEAM`) plus the target's
-(`SERIAL` | `AVD` | `TARGET_KIND`+`UDID`). That keeps the scripts runnable by hand from
-Terminal, which is a feature: tell the user.
+Every run passes the app settings to the scripts as **environment variables**:
+- App: `APP_DIR`, `APP_NAME`, `BASE_PACKAGE` (`packageName`), `PACKAGE` (`packageName + debugPackageSuffix`),
+  `ANDROID_MODULE`, `SHARED_MODULE`, `IOS_PROJECT`, `IOS_SCHEME`, optional `DEVELOPMENT_TEAM`.
+- Firebase (when `firebase` is configured — required by `deploy_firebase.sh` under `set -u`):
+  `FIREBASE_PROJECT` (`firebase.project`), `FIREBASE_ONLY` (`firebase.only`), optional
+  `FIREBASE_TEST` (`firebase.testCommand`).
+- Target: `SERIAL` | `AVD` | `TARGET_KIND`+`UDID`.
 
-**The suffix matters.** `installDebug` installs `com.me.myapp.dev` when the debug build has
-`applicationIdSuffix = ".dev"`. Launching `com.me.myapp` then fails with exit 252.
+That keeps the scripts runnable by hand from Terminal, which is a feature: tell the user.
+
+**The suffix matters.** In Gradle apps, `installDebug` installs `com.me.myapp.dev` when the
+debug build sets `applicationIdSuffix = ".dev"` (launching `com.me.myapp` fails with exit 252).
+In `./kotlin` (Kotlin Toolchain / Amper) apps where `applicationIdSuffix` does not exist,
+`run_android.sh` compares `PACKAGE` against `BASE_PACKAGE` and automatically rewrites the debug
+APK's package name (`aapt2 --rename-manifest-package`), authorities, and launcher label
+(`<App> Dev`) and re-signs with `~/.android/debug.keystore` so dev builds install side-by-side
+without overwriting Play Store builds.
 
 ## 3. Finding targets (`DeviceScanner`)
 
-Run off the main thread (a few hundred ms per tool). Return nothing, not an error, for a
-missing tool. Each target: `kind`, `key`, `name`, `detail`.
+Run off the main thread (a few hundred ms per tool). Resolve `<sdk>/platform-tools/adb` and
+`<sdk>/emulator/emulator` directly from `ANDROID_HOME` / `ANDROID_SDK_ROOT` /
+`~/Library/Android/sdk` rather than relying on `PATH` (which lacks Android SDK folders when
+launched from Finder/Dock). Return nothing, not an error, for a missing tool. Each target:
+`kind`, `key`, `name`, `detail`.
 
 | Kind | How | Notes |
 |---|---|---|
 | Android phones and running emulators | `adb devices -l` | `adb` ends lines with `\r\n`, so split on `.newlines`, not `"\n"`. For `emulator-*` serials ask `adb -s <serial> emu avd name` (first line) for the friendly name. A phone whose state is not `device` shows "unlock it and allow USB debugging". |
 | Android emulators (will boot) | `emulator -list-avds` | Drop ones already running and `INFO` lines. Detail "boots before installing". |
 | iOS simulators | `xcrun simctl list devices available -j` | Names beginning "iPhone" on the **newest installed iOS runtime**, plus any already booted on older runtimes. Sort booted first, then name. Parse runtime keys like `...SimRuntime.iOS-18-2`. |
-| Paired iPhones | `xcrun devicectl list devices --json-output <tmpfile>` | Keep `deviceType == iPhone` and `pairingState == paired`. `tunnelState == connected` means ready; otherwise "not connected - unlock it, or plug it in". Write the JSON to a temp file and delete it after. |
+| Paired iPhones | `xcrun devicectl list devices --json-output <tmpfile>` | Parse `result.devices[]`: keep `hardwareProperties.deviceType == "iPhone"` and `connectionProperties.pairingState == "paired"`. Name is `deviceProperties.name`. **Use `hardwareProperties.udid` as `UDID` (never top-level `device.identifier`, which is a CoreDevice UUID that `xcodebuild -destination "id=..."` rejects; `devicectl --device` accepts `hardwareProperties.udid` too).** `connectionProperties.tunnelState == "connected"` (or `"availableForPairing"` / wired) means ready; otherwise "not connected - unlock it, or plug it in". Write the JSON to a temp file and delete it after. |
 
 Default selection when nothing remembered: a live Android device, else a booted simulator,
 else the first target. Rescan on launch, on **Refresh**, after every run (an emulator or
@@ -133,9 +149,11 @@ line flag prints the list and exits (verification hook).
 ## 4. Running (`RunModel`)
 
 One process at a time (`guard !isRunning`). `start(app, title, script, env)`:
-- Run `/bin/zsh -lc "exec /bin/bash '<scriptsDir>/<script>'"` with the environment merged as
-  `ProcessInfo.environment` + app env + target env + `LC_ALL/LANG=en_US.UTF-8`.
-  Login shell so `JAVA_HOME`, Homebrew and the Android SDK match Terminal.
+- Run `/bin/zsh -lc 'export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"; exec /bin/bash "<scriptsDir>/<script>"'`
+  with the environment merged as `ProcessInfo.environment` + app env + target env +
+  `LC_ALL/LANG=en_US.UTF-8`. Prepend Homebrew **inside** the `-lc` command string because
+  `/etc/zprofile` runs `/usr/libexec/path_helper -s` and reorders `/usr/bin` ahead of any
+  `PATH` passed in `Process.environment`.
 - `standardInput = FileHandle.nullDevice` so a tool that prompts fails fast instead of hanging.
 - stdout and stderr to one `Pipe`; `readabilityHandler` appends chunks on the main queue.
 - On exit: append `✅ <title>` or `❌ <title> (exit N)`, set state, `NSApp.requestUserAttention`
@@ -148,10 +166,10 @@ Scripts (copy from this skill's `scripts/`; each has a header documenting its va
 
 | Script | What it does |
 |---|---|
-| `run_android.sh` | Optionally boots the AVD (double-forked so it outlives a Cancel, polls up to 3 minutes, waits for `sys.boot_completed`), verifies the device state, exports `ANDROID_SERIAL`, runs `./gradlew :<module>:installDebug`, then launches by asking the *device* for the launcher activity (`cmd package resolve-activity --brief`), which survives namespace != applicationId; falls back to `monkey`. |
+| `run_android.sh` | Resolves a compatible `JAVA_HOME`, optionally boots the AVD (double-forked so it outlives a Cancel, polls up to 3 minutes, waits for `sys.boot_completed`), verifies the device state, exports `ANDROID_SERIAL`, runs `./gradlew :<module>:installDebug` (or `./kotlin build` + optional `aapt2` `.dev` package rename), then launches by asking the *device* for the launcher activity (`cmd package resolve-activity --brief`), which survives namespace != applicationId; falls back to `monkey`. |
 | `run_ios.sh` | Boots the simulator and opens Simulator.app, or for a device adds `-allowProvisioningUpdates` (and `DEVELOPMENT_TEAM` if set). `xcodebuild ... -derivedDataPath build/runner/<kind> build`, finds the `.app`, reads `CFBundleIdentifier` with PlistBuddy (iOS bundle id can differ from the Android package), installs and launches via `simctl` or `devicectl`. Prints targeted advice on failure (signing for devices; minimum iOS for simulators). |
-| `compile_ios.sh` | `./gradlew :<shared>:compileKotlinIosSimulatorArm64 --stacktrace`. The fast "does iOS still compile?" check, no Xcode. |
-| `deploy_firebase.sh` | Optional. Runs the test command, then `firebase deploy --only <target> --project <id> --non-interactive`. |
+| `compile_ios.sh` | Resolves `JAVA_HOME`, then runs `./gradlew :<shared>:compileKotlinIosSimulatorArm64 --stacktrace` (or `./kotlin build -m iosApp -p iosSimulatorArm64`). The fast "does iOS still compile?" check, no Xcode. |
+| `deploy_firebase.sh` | Optional. Runs `FIREBASE_TEST` (and writes Publisher's shared `tests/<packageName>-<sha>` marker when clean), then `firebase deploy --only <target> --project <id> --non-interactive`. |
 
 Make `build/runner/` ignorable: tell the user to add it to the app's `.gitignore`.
 
@@ -168,11 +186,15 @@ deploy first.
 - `behind` = never deployed, or any commits, or any uncommitted files.
 
 **Deploy log**: JSON array of `{ id, commit, date }` (ISO-8601 dates, `id` = the app's
-packageName) at `~/Library/Application Support/Publisher/firebase_deploys.json`. This is the
-path `build-publisher` uses, on purpose: a deploy from either app marks the backend current
-in the other. Read it fresh each time (the other app may have written it), and append on
-success (read, add, write atomically). Record the **HEAD sha captured when the deploy
-started**, not when it ended.
+`packageName`, i.e. `BASE_PACKAGE`, without `debugPackageSuffix`) at
+`~/Library/Application Support/Publisher/firebase_deploys.json`. This is the path
+`build-publisher` uses, on purpose: a deploy from either app marks the backend current in the
+other. Parse dates tolerantly (try `ISO8601DateFormatter` both with and without
+`.withFractionalSeconds` so records written by either app decode cleanly). Read it fresh each
+time (the other app may have written it), and append on success (read, add, write atomically).
+Record the **HEAD sha captured when the deploy started**, not when it ended. `deploy_firebase.sh`
+also touches `~/Library/Application Support/Publisher/tests/<packageName>-<sha>` when
+`FIREBASE_TEST` passes on a clean tree so Publisher's Shared readiness gate sees the test run.
 
 **Strip** (above the run grid): green check "Firebase functions are up to date", or amber
 warning "need a deploy" / "not deployed yet", with a detail line (`Deployed <date> · <sha7> ·

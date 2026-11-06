@@ -13,6 +13,24 @@ set -euo pipefail
 APP_DIR=$1; PKG=$2; KEY=$3; META=$4; TRACK=$5; NOTES_FILE=$6; MODULE=${7:-androidApp}
 cd "$APP_DIR"
 
+resolve_java_home() {
+  if [ -n "${JAVA_HOME:-}" ] && [ -x "$JAVA_HOME/bin/java" ]; then
+    local major
+    major=$("$JAVA_HOME/bin/java" -version 2>&1 | awk -F '[\".]' '/version/ {print ($2=="1" ? $3 : $2); exit}')
+    [ -n "$major" ] && [ "$major" -le 23 ] 2>/dev/null && return 0
+  fi
+  for v in 21 17; do
+    local jh
+    jh=$(/usr/libexec/java_home -F -v "$v" 2>/dev/null || true)
+    if [ -n "$jh" ] && [ -x "$jh/bin/java" ]; then export JAVA_HOME="$jh"; return 0; fi
+  done
+  for jbr in "/Applications/Android Studio.app/Contents/jbr/Contents/Home" \
+             "/Applications/Android Studio Preview.app/Contents/jbr/Contents/Home"; do
+    if [ -x "$jbr/bin/java" ]; then export JAVA_HOME="$jbr"; return 0; fi
+  done
+}
+resolve_java_home
+
 # Publisher.app takes the lock before invoking this script and sets PUBLISHER_LOCK_OWNED.
 # Run straight from a terminal, honour the lock ourselves so a manual run cannot race
 # a publish already in flight from the app.

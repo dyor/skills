@@ -1,7 +1,7 @@
 ---
 name: build-publisher
 description: Build "Publisher", a macOS app for shipping mobile builds to Google Play and the App Store/TestFlight without a terminal - pre-flight checks, one-click Build & Upload to the internal track with a safe version code, promote internal to closed testing to production, store-listing diff and upload (text, icon, screenshots), iOS TestFlight upload and App Review submission, release notes, a publish lock, and a "ready to publish" gate (committed, pushed, backend deployed, tests passed). Plain Swift package with fastlane/Ruby/shell scripts bundled in this skill. Use when the user says "build Publisher", "set up one-click Play/TestFlight publishing", or asks for /dyor-knowledge-base publisher. Mac only. Companion skills - build-operator, build-runner, play-prepublish-check, google-play-publishing.
-version: 1.0.0
+version: 1.1.0
 ---
 
 # Build Publisher
@@ -37,11 +37,22 @@ before the next** (section 2). Do not try to land everything at once.
 6. Bundle id prefix, icon, and where the Mac's `fastlane`/Ruby come from (see prerequisites).
 
 **Prerequisites** (verify; tell the user, never silently install system software):
-- Xcode command-line tools; **full Xcode** for iOS archive/upload.
-- **Ruby with Bundler**, and in each app's `appDir`: a `Gemfile` containing `fastlane` and
-  `googleauth` (plus `jwt` for App Store Connect), `bundle install` done. If they use
-  rbenv/Homebrew Ruby, commands must run through `/bin/zsh -lc` so `PATH` matches Terminal.
-  macOS's system Ruby is too old; use Homebrew or rbenv.
+- Xcode command-line tools; **full Xcode** for iOS archive/upload (verify via `xcodebuild -version`,
+  not `/Applications/Xcode.app` existence, as versioned bundles like `/Applications/Xcode_26.x.app`
+  are common).
+- **Ruby 3+ with Bundler / Fastlane**, and in each app's `appDir`: a `Gemfile` declaring
+  `fastlane` (`googleauth` and `jwt` are often transitive in `Gemfile.lock` rather than listed
+  directly in `Gemfile`, so accept either). **Two macOS Ruby traps to guard against in Swift**:
+  1. `/bin/zsh -lc` skips `~/.zshrc`, and `/etc/zprofile` runs `/usr/libexec/path_helper -s`,
+     which **reorders `/usr/bin` (Apple Ruby 2.6, which syntax-errors on Ruby 3 endless methods
+     in `appstore_*.rb`) ahead of Homebrew** even if `Process.environment["PATH"]` was set.
+     `brew install ruby` on Apple Silicon is also **keg-only** at `/opt/homebrew/opt/ruby/bin`.
+     Always prepend `export PATH="/opt/homebrew/opt/ruby/bin:/usr/local/opt/ruby/bin:$HOME/.rbenv/shims:/opt/homebrew/bin:/usr/local/bin:$PATH";`
+     **inside** the `-lc` command string.
+  2. `brew install fastlane` isolates gems in `/opt/homebrew/opt/fastlane/libexec`, so
+     `bundle check` in `appDir` may fail if `bundle install` was not run locally; check
+     `bundle check` first and fall back to Homebrew fastlane's `GEM_HOME`/`GEM_PATH` (or tell
+     the user to run `bundle install` in `appDir`).
 - Each app has `fastlane/Fastfile` (can be minimal: a `first_time_build` lane that runs
   `gradle(task: "bundleRelease")`), `gradlew`, and `<module>/build.gradle.kts` with
   `versionCode = N` and `versionName = "x"` literals on their own lines. Publisher reads and
@@ -72,7 +83,9 @@ header; the same tabs then show the App Store side.
 ### Config
 
 `config.json` beside `Publisher.app` (else `~/.config/publisher/config.json`; `$PUBLISHER_CONFIG`
-wins). Paths inside are absolute or relative to `appDir`.
+wins). Always call `expandingTildeInPath` on every configured path (`appDir`, keys, metadata,
+`appStoreConnect.keyPath`) before checking whether it is absolute or resolving relative paths
+against `appDir`.
 
 ```json
 {
@@ -87,7 +100,9 @@ wins). Paths inside are absolute or relative to `appDir`.
     "playConsoleURL": "https://play.google.com/console/...",
     "testersURL": "https://play.google.com/apps/internaltest/...",
     "ios": { "project": "iosApp/iosApp.xcodeproj", "scheme": "iosApp",
-             "bundleId": "com.me.myapp", "appStoreConnectURL": "https://appstoreconnect.apple.com/apps/.../distribution" },
+             "bundleId": "com.me.myapp",
+             "metadataPath": "distribution/ios/appstore_metadata",
+             "appStoreConnectURL": "https://appstoreconnect.apple.com/apps/.../distribution" },
     "firebase": { "project": "my-fb-id", "only": "functions",
                   "testCommand": "node --test functions/*.test.js", "paths": ["functions"] }
   } ],
@@ -97,7 +112,8 @@ wins). Paths inside are absolute or relative to `appDir`.
 
 - Required for Play apps: `name`, `appDir`, `packageName`, `serviceAccountKey`. Defaults:
   `androidModule` = `androidApp`; `metadataPath` = `distribution/android/playstore_metadata`;
-  `keystoreProperties` unset (not checked, **tell the user to set it**).
+  `ios.metadataPath` = `distribution/ios/appstore_metadata`; `keystoreProperties` unset (not
+  checked, **tell the user to set it**).
 - **iOS-only apps** omit `packageName` and `serviceAccountKey`; they get no Play switch or
   Android checks. The app's key everywhere (`id`) is `packageName` if it has one, else the iOS
   bundle id.
@@ -115,9 +131,12 @@ Before any action, check and **refuse with a readable message** instead of faili
 `appDir` exists; `fastlane/Fastfile`, `Gemfile`, `gradlew` exist; `<module>/build.gradle.kts`
 exists; keystore properties file exists (when configured); service-account key exists;
 `targetSdk` in the build file is acceptable for Play's current requirement (warn, not
-block); **no publish in progress** (lock, below). A red blocking item blocks builds; actions
-that only talk to Play (listing, promote, pull) need just the tooling and the service-account
-key, so a missing upload keystore does not lock the user out of the store listing.
+block — support both literal integers and multi-line version-catalog references like
+`libs.versions.android.targetSdk.get().toInt()` resolved from `gradle/libs.versions.toml` or
+`../gradle/libs.versions.toml`); **no publish in progress** (lock, below). A red blocking item
+blocks builds; actions that only talk to Play (listing, promote, pull) need just the tooling
+and the service-account key, so a missing upload keystore does not lock the user out of the
+store listing.
 
 ### The publish lock
 
@@ -181,9 +200,13 @@ log** (`~/Library/Application Support/Publisher/activity.json`: date, app, title
    - Afterwards commit **just** the version bump and the changelog
      (`chore(release): versionCode N to internal`) and push, best effort, so the tree is not
      left dirty (a dirty tree blocks the next publish).
-   - Release bookkeeping edits (changelog files; a build-file diff that is only `versionCode`)
-     must not count as "uncommitted changes" in the readiness check, or a failed upload would
-     block its own retry.
+   - Release bookkeeping edits (changelog files; a build-file diff that is only `versionCode`
+     or `CURRENT_PROJECT_VERSION`) must not count as "uncommitted changes" in the readiness
+     check, or a failed upload would block its own retry. Pass `-uall` to
+     `git status --porcelain` so untracked `changelogs/<code>.txt` files are listed
+     individually (not collapsed into a directory entry), and match paths by suffix or relative
+     to `git rev-parse --show-toplevel` because `git status` returns repo-root-relative paths
+     (`MobileApp/androidApp/...`) when `appDir` is a `MobileApp/` subfolder.
 5. **Phase 1 verification**: `swift build` clean; `play_snapshot.rb` returns JSON for a real
    app; the Overview shows tracks and the Release card. **Do not upload a build as a test.**
    If the user wants to try it, they press Publish themselves; you can run
@@ -276,17 +299,21 @@ is the list of what is not true yet; a store action with any blocker **refuses t
 prints them. The Shared tab shows a banner ("Ready to publish" / "Not ready: N items") and
 the checklist:
 
-1. **Committed**: `git status --porcelain` empty (excluding release bookkeeping).
+1. **Committed**: `git status --porcelain -uall` empty (excluding release bookkeeping, matched
+   repo-root-aware when `appDir` is a subfolder like `MobileApp/`).
 2. **Pushed**: `git rev-list --count @{u}..HEAD` is 0; no upstream is also a blocker.
 3. **Backend deployed** (only with a `firebase` block): not behind the last deploy.
    Compute exactly as in `build-runner` section 5 and share the same
-   `~/Library/Application Support/Publisher/firebase_deploys.json` log. A Firebase card on
-   Overview shows deployed-at, commits since, uncommitted files, and a **Deploy** button that
-   always confirms and runs `testCommand` first (`<test> && firebase deploy --only <target>
-   --project <id> --non-interactive`), recording HEAD (captured at the start) on success.
+   `~/Library/Application Support/Publisher/firebase_deploys.json` log (decode ISO-8601 dates
+   both with and without `.withFractionalSeconds` so entries written by either Runner or
+   Publisher parse cleanly). A Firebase card on Overview shows deployed-at, commits since,
+   uncommitted files, and a **Deploy** button that always confirms and runs `testCommand` first
+   (`<test> && firebase deploy --only <target> --project <id> --non-interactive`), recording
+   HEAD (captured at the start) on success.
 4. **Tests passed on this commit** (only when `firebase.testCommand` is set): a marker file
-   `~/Library/Application Support/Publisher/tests/<appId>-<sha>` written when the test run
-   succeeds, so a new commit invalidates it.
+   `~/Library/Application Support/Publisher/tests/<appId>-<sha>` written whenever `testCommand`
+   succeeds on a clean tree (including during a Firebase deploy from either Runner or
+   Publisher), so a new commit invalidates it.
 
 Also show per-platform "commits since the last upload", and a "changes since last Firebase
 deploy" list. Re-read this whenever the app becomes active or a run finishes.

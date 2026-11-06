@@ -10,7 +10,7 @@ require "spaceship"
 bundle_id, key_id, issuer_id, key_path, version_string, build_number = ARGV
 abort("usage: appstore_submit.rb <bundleId> <keyId> <issuerId> <keyPath> <version> <build>") unless build_number
 
-Spaceship::ConnectAPI.auth(key_id: key_id, issuer_id: issuer_id, filepath: key_path)
+Spaceship::ConnectAPI.auth(key_id: key_id, issuer_id: issuer_id, filepath: File.expand_path(key_path))
 app = Spaceship::ConnectAPI::App.find(bundle_id) or abort("No app for #{bundle_id} in App Store Connect")
 platform = Spaceship::ConnectAPI::Platform::IOS
 
