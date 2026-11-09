@@ -1,7 +1,7 @@
 ---
 name: build-runner
-description: Build "Runner", a macOS app that builds a Kotlin Multiplatform (KMP) or Android/iOS app and runs it on a chosen target - a plugged-in Android phone, a running or bootable emulator, an iPhone simulator, or a paired iPhone - with one click, streaming the build log, plus a fast iOS compile check, a build-time chart, and an optional Firebase functions deploy gate that makes sure the backend is current before running on a device. Plain Swift package; bundled shell scripts do the work. Use when the user says "build Runner", "set up Runner", "one-click run on my phone/simulator", or asks for /dyor-knowledge-base runner. Mac only. Companion skills - build-operator and build-publisher.
-version: 1.1.0
+description: Build "Runner", a macOS app that builds a Kotlin Multiplatform (KMP) or Android/iOS app and runs it on a chosen target - a plugged-in Android phone, a running or bootable emulator, an iPhone simulator, or a paired iPhone - with one click, streaming the build log, plus a fast iOS compile check, a build-time chart, and an optional Firebase functions deploy gate that makes sure the backend is current before running on a device. Plain Swift package; bundled shell scripts do the work. Use when the user says "build Runner", "set up Runner", "one-click run on my phone/simulator", or asks for /dyor-knowledge-base runner. Built as RunnerKit + a thin app, so Appos (build-appos) can show it inside its window. Mac only. Companion skills - build-operator, build-publisher, build-appos.
+version: 1.2.0
 ---
 
 # Build Runner
@@ -216,14 +216,44 @@ window. Operator sends this from its ▶ Run button (see `build-operator`). The 
 alive with no windows open (`applicationShouldTerminateAfterLastWindowClosed` false) so a
 build keeps going and the link reopens it instantly. Also handle `applicationShouldHandleReopen`.
 
+## 6a. Inside Appos
+
+Follow recipe §9. For Runner specifically:
+
+- `Config.repoDir` is a settable `static var`; `RunnerEmbed(repoDir:)` sets it before creating
+  `RunModel`. Use the bundled `scripts/` only when the bundle id is Runner's own.
+- `RunnerDefaults.store` replaces `UserDefaults.standard` for `lastApp`, `lastTarget` and
+  `buildRecords`, so the build-time chart is the same in both apps.
+- `ContentView(model:, embedded: true)` hides the sidebar; `minWidth` becomes 700.
+- `RunnerEmbed.show(package:)` reloads config and selects the app. While a run is going for a
+  *different* app it refuses and returns false, the same rule that disables the standalone
+  sidebar rows. `runningPackage` and `failedPackage` drive the spinner and the "Last run
+  failed" note in Appos's list.
+- The ⌘R shortcut on Run still works inside Appos, because it lives on the button.
+
 ## 7. Files to write
 
 ```
-Sources/Runner/  main.swift (+ --devices)  AppDelegate.swift  Config.swift  Devices.swift
-                 RunModel.swift  Firebase.swift  ContentView.swift  Theme.swift  RebuildLauncher.swift
-scripts/         run_android.sh run_ios.sh compile_ios.sh deploy_firebase.sh   (copy from this skill)
-config.json  Package.swift  build.sh (copies scripts/*.sh into the bundle)  rebuild.sh  .gitignore
+Sources/RunnerKit/  RunnerMain.swift (public entry point, + --devices)  AppDelegate.swift
+                    Config.swift  Devices.swift  RunModel.swift  Firebase.swift  ContentView.swift
+                    Theme.swift  RebuildLauncher.swift  Embed.swift (RunnerEmbed, RunnerDefaults)
+Sources/Runner/     main.swift: `import RunnerKit; RunnerMain.main()`
+scripts/            run_android.sh run_ios.sh compile_ios.sh deploy_firebase.sh   (copy from this skill)
+config.json  Package.swift (Kit + app, see recipe §1)  build.sh (copies scripts/*.sh into the bundle)
+rebuild.sh  .gitignore
 ```
+
+Don't name the public entry point `RunnerApp`: that's the config model's type name, and the
+clash breaks the whole module.
+
+Layout: the header (with **Run**) and the run banner stay pinned. Below them a single
+`ScrollView` holds the Firebase strip, the target grid, the log (fixed 300 pt) and the chart,
+so the window can shrink to ~420 pt tall and still reach everything. Don't give the target
+grid its own height-capped scroll box: with phones listed last, a real iPhone ended up out of
+sight. List targets in `Target.Kind` declaration order with **real phones first**: iPhones,
+then Android phones and running emulators, then bootable emulators, then simulators. The
+kind's raw value is part of the saved target id, so reorder the cases but don't reword them.
+The header shows Runner's gem (`Gem("runner")`, see `build-appos`).
 
 Theme: a warm near-black palette with one amber accent and status colors that differ in
 lightness as well as hue (so they read for color-blind users). Ground `#111210`, surface

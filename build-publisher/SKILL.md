@@ -1,7 +1,7 @@
 ---
 name: build-publisher
-description: Build "Publisher", a macOS app for shipping mobile builds to Google Play and the App Store/TestFlight without a terminal - pre-flight checks, one-click Build & Upload to the internal track with a safe version code, promote internal to closed testing to production, store-listing diff and upload (text, icon, screenshots), iOS TestFlight upload and App Review submission, release notes, a publish lock, and a "ready to publish" gate (committed, pushed, backend deployed, tests passed). Plain Swift package with fastlane/Ruby/shell scripts bundled in this skill. Use when the user says "build Publisher", "set up one-click Play/TestFlight publishing", or asks for /dyor-knowledge-base publisher. Mac only. Companion skills - build-operator, build-runner, play-prepublish-check, google-play-publishing.
-version: 1.1.0
+description: Build "Publisher", a macOS app for shipping mobile builds to Google Play and the App Store/TestFlight without a terminal - pre-flight checks, one-click Build & Upload to the internal track with a safe version code, promote internal to closed testing to production, store-listing diff and upload (text, icon, screenshots), iOS TestFlight upload and App Review submission, release notes, a publish lock, and a "ready to publish" gate (committed, pushed, backend deployed, tests passed). Plain Swift package with fastlane/Ruby/shell scripts bundled in this skill. Use when the user says "build Publisher", "set up one-click Play/TestFlight publishing", or asks for /dyor-knowledge-base publisher. Built as PublisherKit + a thin app, so Appos (build-appos) can show it inside its window. Mac only. Companion skills - build-operator, build-runner, build-appos, play-prepublish-check, google-play-publishing.
+version: 1.2.0
 ---
 
 # Build Publisher
@@ -282,6 +282,30 @@ log** (`~/Library/Application Support/Publisher/activity.json`: date, app, title
 Play Console). Keep the Dock tile (`setActivationPolicy(.regular)`). `publisher://open?package=
 <packageName or bundleId>` selects an app (Operator's **Publish** button sends it); if it
 arrives at cold launch, store the selection and show the window after.
+
+### Inside Appos
+
+Follow recipe §9. For Publisher specifically:
+
+- Put everything in `Sources/PublisherKit/`. `Sources/Publisher/main.swift` is
+  `MainActor.assumeIsolated { PublisherMain.main() }`, because the AppDelegate and `AppModel`
+  are `@MainActor`.
+- `Config.repoDir` gets an override (`repoDirOverride`) that `PublisherEmbed(repoDir:)` sets.
+  Use bundled scripts only when standalone.
+- `PublisherDefaults.store` replaces `UserDefaults.standard` (release-note drafts,
+  `sentForReview`), so a draft started in one app shows in the other.
+- `RootView(model:runner:store:embedded: true)` hides the sidebar, relaxes `minWidth` to 800,
+  and skips the `onAppear` store fetch. `PublisherEmbed` fetches Play and App Store Connect
+  once, on the first `show(package:)`, and re-reads git on `didBecomeActive` as the
+  AppDelegate does.
+- `show(package:)` matches `packageName`, `id` or `iosBundleId`, because App Store-only apps
+  have no Android package. `runningPackage` returns the running project's `id`.
+- The Shared tab's **Commit & push…** checks `PublisherEmbed.openShip` before opening
+  `operator://ship`.
+- Every tab scrolls on its own, so the window's `minHeight` is 460, not 700. The sidebar's app
+  list is in a `ScrollView` too. The header shows Publisher's gem (`Gem("publisher")`).
+- **The menu-bar item isn't part of Appos.** It lives in the AppDelegate, which Appos doesn't
+  use. Standalone Publisher keeps it.
 
 ## 4. Version names and what Publisher never does
 

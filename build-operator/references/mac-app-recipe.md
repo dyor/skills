@@ -1,8 +1,9 @@
 # Recipe: a plain-Swift-package Mac app (no Xcode project)
 
-Operator, Runner and Publisher are all built this way. It needs only the Xcode command-line
-tools (`xcode-select --install`), not the full Xcode app, and nothing to maintain except
-Swift files and one build script. Follow this recipe for each of the three apps.
+Operator, Runner and Publisher are all built this way, and Appos (`build-appos`) embeds all
+three. It needs only the Xcode command-line tools (`xcode-select --install`), not the full Xcode
+app, and nothing to maintain except Swift files and one build script. Follow this recipe for
+each app.
 
 ## 1. Layout
 
@@ -13,7 +14,8 @@ Swift files and one build script. Follow this recipe for each of the three apps.
   rebuild.sh          # quit the running app, rebuild, reopen
   config.json         # (Runner, Publisher) the list of apps; optional for Operator
   scripts/            # (Runner, Publisher) shell/ruby the app runs; copied into the bundle
-  Sources/<AppName>/  # main.swift, AppDelegate.swift, ContentView.swift, ...
+  Sources/<AppName>Kit/  # everything: AppDelegate.swift, ContentView.swift, models, ...
+  Sources/<AppName>/     # main.swift only: calls into the Kit
   <AppName>.icns      # optional; see "Icon"
   .gitignore          # .build/  <AppName>.app/  .swiftpm/  .DS_Store
 ```
@@ -24,12 +26,27 @@ Swift files and one build script. Follow this recipe for each of the three apps.
 // swift-tools-version:5.9
 import PackageDescription
 
+// AppNameKit holds everything; the AppName app is a thin wrapper around it. Appos
+// embeds AppNameKit, so the same code runs standalone or inside Appos.
 let package = Package(
     name: "AppName",
     platforms: [.macOS(.v13)],
-    targets: [.executableTarget(name: "AppName", path: "Sources/AppName")]
+    products: [
+        .executable(name: "AppName", targets: ["AppName"]),
+        .library(name: "AppNameKit", targets: ["AppNameKit"]),
+    ],
+    targets: [
+        .target(name: "AppNameKit", path: "Sources/AppNameKit"),
+        .executableTarget(name: "AppName", dependencies: ["AppNameKit"], path: "Sources/AppName"),
+    ]
 )
 ```
+
+Splitting into a **Kit** (library) and a thin **app** costs one extra file. It lets Appos show
+this app's screens in its own window without copying any code. The executable keeps its name,
+so `.build/release/AppName` and `build.sh` don't change. See §9 for what the Kit must expose.
+If the user will never want Appos, a single `executableTarget` still works. Start with the
+split anyway: adding it later means moving every file.
 
 Runner uses Swift Charts (`import Charts`) for its build-time chart; that ships with macOS 13+
 and needs no package dependency.
@@ -40,14 +57,26 @@ SwiftUI's `App` lifecycle plus `MenuBarExtra` can leave the app running with no 
 Bootstrap AppKit yourself and host SwiftUI inside an `NSWindow`:
 
 ```swift
-// main.swift
+// Sources/AppNameKit/AppNameMain.swift
 import AppKit
-let app = NSApplication.shared
-let delegate = AppDelegate()
-app.delegate = delegate
-app.setActivationPolicy(.regular)
-app.run()
+public enum AppNameMain {          // not `AppNameApp`: that name tends to collide with a model type
+    public static func main() {
+        let app = NSApplication.shared
+        let delegate = AppDelegate()   // stays alive: app.run() never returns
+        app.delegate = delegate
+        app.setActivationPolicy(.regular)
+        app.run()
+    }
+}
+
+// Sources/AppName/main.swift — the whole executable
+import AppNameKit
+AppNameMain.main()
 ```
+
+If the delegate is `@MainActor`, mark the enum `@MainActor` and call it as
+`MainActor.assumeIsolated { AppNameMain.main() }`. Everything else in the Kit stays
+`internal`. Only the entry point and the §9 embed type are `public`.
 
 ```swift
 // AppDelegate.swift (shape)
@@ -75,7 +104,7 @@ Because the window uses `.fullSizeContentView` with `titlebarAppearsTransparent 
 ~36 pt of top inset on the sidebar/header so the close/minimize/zoom traffic-light buttons do
 not overlap your controls.
 
-A `--list` style flag in `main.swift` that prints what the window would show and exits is
+A `--list` style flag in the entry point that prints what the window would show and exits is
 worth adding to every app. It lets you (and an agent) verify discovery logic headlessly,
 without screenshots.
 
@@ -143,6 +172,8 @@ the app with another Mac, they build it from the same skill.
 Scripts are copied into the bundle at build time. Edit the copy in the project folder and
 rebuild; never edit the one inside the `.app`. At run time the app looks for
 `Bundle.main.resourceURL/scripts` first and falls back to `<folder next to the .app>/scripts`.
+Only use the bundled copy when running standalone (§9). Inside Appos, `Bundle.main` is
+Appos.app, which has no `scripts/`.
 
 ## 4. `rebuild.sh`
 
@@ -238,3 +269,52 @@ it sticks, and show the window afterwards.
   content view with `bitmapImageRepForCachingDisplay` + `cacheDisplay` to a PNG after a few
   seconds, then quits. It draws the app's own views, so it needs no Screen Recording
   permission and lets an agent look at the UI.
+
+## 9. Kit rules: running inside Appos
+
+Appos (`build-appos`) shows Operator's project list on the left and opens Runner or Publisher
+**inside its own window** on the right, for the selected project. It does this by linking each
+app's Kit. Code in a Kit can't assume it owns the process, so:
+
+1. **Never derive paths from `Bundle.main`, unless you're standalone.** `Bundle.main` is
+   whichever app is running, which might be Appos.app. Make the checkout folder settable:
+   `static var repoDir = Bundle.main.bundleURL.deletingLastPathComponent()` (a `var`, not a
+   `let`), or an optional override that the embed initializer sets. `config.json`,
+   `scripts/` and `rebuild.sh` all resolve from it.
+2. **Know whether you're standalone.** `Bundle.main.bundleIdentifier == "<your bundle id>"`.
+   Use the bundled `scripts/` only when it's true.
+3. **Keep settings in your own preferences domain.** Replace `UserDefaults.standard` with
+   `standalone ? .standard : UserDefaults(suiteName: "<your bundle id>")`. (Passing your own
+   bundle id as a suite name is not allowed, hence the branch.) Then build history, drafts and
+   last selections are the same in the standalone app and in Appos.
+4. **The root view takes `embedded: Bool`.** When it's true, drop the app's own sidebar (Appos's
+   list picks the project) and relax `minWidth`. Everything right of the sidebar stays
+   exactly as it is.
+5. **Expose one public embed type, and nothing else public.**
+
+   ```swift
+   public final class AppNameEmbed: ObservableObject {     // @MainActor if the model is
+       public init(repoDir: URL)                          // sets repoDir, creates the model
+       @discardableResult
+       public func show(package: String) -> Bool          // select that app; reload config first
+       public var view: AnyView                           // RootView(model:, embedded: true)
+       public func reload()                               // Appos's "Reload config"
+       public var runningPackage: String? { get }         // drives the spinner in Appos's list
+   }
+   ```
+
+   Forward the model's `objectWillChange` (Combine `sink`) so Appos's list updates when a run
+   starts or ends. Do any one-time network refresh (Play / App Store Connect) on the first
+   `show`, not in `onAppear`, because the pane appears every time it's opened.
+6. **Links to sibling apps become hooks.** A button that would open `operator://ship?...`
+   checks a `public static var openShip: ((String) -> Void)?` first. Appos sets it, so the
+   review opens in Appos instead of launching standalone Operator.
+7. **Window-level things stay in the AppDelegate**: the window, main menu, status-bar item,
+   URL-scheme handler, snapshot env var, and Esc handling. Appos doesn't use the
+   AppDelegate, so none of these appear inside it, and that's intended.
+8. **Name clashes across Kits are fine** while types are `internal`: Runner and Publisher both
+   have a `Sidebar`, a `Theme` and `Color(hex:)`. Only public names must be unique, which is
+   why each embed type and entry point carries the app's name.
+
+Verify the split with `swift build` in the app's folder (the standalone app must still build)
+and in Appos's folder (which compiles every Kit from source).

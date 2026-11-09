@@ -1,7 +1,7 @@
 ---
 name: dyor-knowledge-base
 description: A summary of all names and descriptions of skills in the dyor/skills repository, used to guide importing relevant skills.
-version: 1.5.0
+version: 1.6.0
 ---
 
 # Skill: dyor-knowledge-base
@@ -33,8 +33,12 @@ This skill acts as a repository of knowledge about available skills in the `dyor
   - **Description**: Bootstraps a new KMP project by cloning a specified GitHub template repository into a new directory, seeding it with core AI skills, stripping its git history, and initializing a fresh workspace.
   - **URL**: `https://github.com/dyor/skills/tree/main/bootstrap-kmp-template`
 
+- **`build-appos`** (Mac only)
+  - **Description**: Builds "Appos", one Dock app for Operator, Runner, Publisher and Tiny Projects. Operator's project list (with an icon per project) is on the left; Run / Publish open Runner or Publisher for that project on the right and close back to Operator. Each tool stays a standalone app too: each is split into a Kit library plus a thin app, and Appos links the Kits. Say "build Appos" or `/dyor-knowledge-base appos`.
+  - **URL**: `https://github.com/dyor/skills/tree/main/build-appos`
+
 - **`build-operator`** (Mac only)
-  - **Description**: Builds "Operator", a keyboard-first macOS launcher for every project in a projects folder: git status on each row, open a coding-agent session / continue the last one / Finder / Terminal, and one reviewed GitHub button (Push on main, Merge → main on a branch, Pull when behind). Plain Swift package, no Xcode project. Say "build my Operator" or `/dyor-knowledge-base operator`.
+  - **Description**: Builds "Operator", a keyboard-first macOS launcher for every project in a projects folder: git status on each row, open a coding-agent session / continue the last one / Finder / Terminal, and one reviewed GitHub button (Push on main, Merge → main on a branch, Pull when behind). Plain Swift package, no Xcode project; built as OperatorKit so Appos can use it. Say "build my Operator" or `/dyor-knowledge-base operator`.
   - **URL**: `https://github.com/dyor/skills/tree/main/build-operator`
 
 - **`build-publisher`** (Mac only)
@@ -44,6 +48,10 @@ This skill acts as a repository of knowledge about available skills in the `dyor
 - **`build-runner`** (Mac only)
   - **Description**: Builds "Runner", a macOS app that builds and runs a KMP/Android/iOS app on a chosen phone, emulator, simulator or paired iPhone with one click and a live log, plus a fast iOS compile check, a build-time chart, and an optional Firebase-functions deploy gate before running on a device. Bundles the run scripts. Say `/dyor-knowledge-base runner`.
   - **URL**: `https://github.com/dyor/skills/tree/main/build-runner`
+
+- **`build-tiny-projects`**
+  - **Description**: Builds "Tiny Projects", a single-file, zero-dependency web page for a few projects and their ranked tasks (By Project and By Priority views, drag-to-swap, snooze), with an optional local JSON-file backend and a dependency-free MCP server so an agent can "add these to tiny projects", plus an optional TinyProjectsKit that opens it inside Appos. Say `/dyor-knowledge-base tiny-projects`.
+  - **URL**: `https://github.com/dyor/skills/tree/main/build-tiny-projects`
 
 - **`compose-migration-hints`**
   - **Description**: A collection of architectural, UI, and workflow guidelines learned from migrating to Android using Jetpack Compose, Room, Koin, and Maps.

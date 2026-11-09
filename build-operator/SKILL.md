@@ -1,7 +1,7 @@
 ---
 name: build-operator
-description: Build "Operator", a keyboard-first macOS launcher for every project in a projects folder (~/Projects/<category>/<project>). One window lists all projects with git status; each row opens a coding-agent session in that folder, continues the last session, opens Finder/Terminal/Android Studio, and ships to GitHub with one reviewed button (Push on main, Merge → main on a branch, Pull when behind). Plain Swift package, no Xcode project. Use when the user says "build Operator", "set up my Operator", "project launcher for my Mac", or asks for /dyor-knowledge-base operator. Mac only. Companion skills - build-runner and build-publisher.
-version: 1.1.0
+description: Build "Operator", a keyboard-first macOS launcher for every project in a projects folder (~/Projects/<category>/<project>). One window lists all projects with git status; each row opens a coding-agent session in that folder, continues the last session, opens Finder/Terminal/Android Studio, and ships to GitHub with one reviewed button (Push on main, Merge → main on a branch, Pull when behind). Plain Swift package, no Xcode project. Use when the user says "build Operator", "set up my Operator", "project launcher for my Mac", or asks for /dyor-knowledge-base operator. Built as OperatorKit + a thin app, so Appos (build-appos) can use its project list and project page. Mac only. Companion skills - build-runner, build-publisher, build-appos.
+version: 1.2.0
 ---
 
 # Build Operator
@@ -9,7 +9,8 @@ version: 1.1.0
 **Operator to code, Runner to try it, Publisher to publish.** Operator is the front door: a
 small Mac app that lists every project on the machine and gets you into the right one in a
 keystroke. Runner (`build-runner`) and Publisher (`build-publisher`) are optional siblings it
-links to.
+links to. Appos (`build-appos`) combines all three in one window, with Operator's list on the
+left.
 
 You (the agent) build the app for the user from this spec. Nothing here is copied code to
 paste blindly: the *behavior* and the *gotchas* are the product. Write the Swift yourself,
@@ -213,16 +214,21 @@ status.
 ## 2. Files to write
 
 ```
-Sources/Operator/
-  main.swift          AppKit bootstrap + `--list` flag (print categories/projects/buttons, exit)
+Sources/OperatorKit/
+  OperatorMain.swift  public entry point: AppKit bootstrap + `--list` flag (print, exit)
   AppDelegate.swift   window, key monitor (Esc, ⌘1-9), reopen handler, operator:// links
-  Projects.swift      Project, Category, Scanner, Launcher (all the "open X" helpers)
+  Projects.swift      Project, Category, Scanner (+ project(containing:)), Launcher ("open X" helpers)
   GitOverview.swift   read-only git summary
   Push.swift          Push review, change description, secret flagging, git helper, shell quoting
   Merge.swift         Merge review + Ship (state -> action) + pull
   ContentView.swift   LauncherModel, search, rows, ChipButton, FlowLayout
-build.sh  rebuild.sh  Package.swift  .gitignore  [scripts/make_icon.swift scripts/make_icns.sh]
+  Icons.swift         ProjectIcons + ProjectIconView (for Appos; see §4a)
+  ProjectPage.swift   OperatorProjectPage + OperatorEmbed (for Appos; see §4a)
+Sources/Operator/main.swift   `import OperatorKit; OperatorMain.main()`
+build.sh  rebuild.sh  Package.swift (Kit + app, see recipe §1)  .gitignore  [scripts/make_icon.swift]
 ```
+
+Skip `Icons.swift` and `ProjectPage.swift` until the user wants Appos.
 
 Hard-won details:
 - Shell-quote **every** path interpolated into a Terminal command with single quotes
@@ -262,6 +268,58 @@ Hard-won details:
 - **Runner and Publisher** are separate skills (`build-runner`, `build-publisher`). Build them
   after Operator and the Run/Publish chips light up by themselves.
 - Keep Operator thin. It launches; it should not build, deploy or publish.
+
+## 4a. Inside Appos
+
+Appos (`build-appos`) uses OperatorKit differently from Runner's and Publisher's Kits: it
+doesn't embed Operator's window, it uses Operator's **data and actions** to draw its own
+sidebar, plus a project page that OperatorKit provides. Make these `public` (recipe §9 covers
+the general rules):
+
+- `Project` (its fields, plus `appDir`: the Runner/Publisher `appDir` that matched, for icons),
+  `Category`, `WebDev`, `ClaudeSession`, `GitOverview.Status` (`summary`, `hasChanges`,
+  `branch`, `changedFiles`).
+- `LauncherModel`: `init()`, `categories`, `filteredCategories`, `searchText`, `gitStatuses`,
+  `isRefreshingGit`, `reload()`, `refreshGit(fetch:)`. `reload()` also clears the icon cache.
+- `OperatorProjectPage(project:model:onRun:onPublish:tasks:)`: `tasks` is an optional
+  `AnyView` card from the host, shown first (Appos passes the project's Tiny Projects card),
+  so OperatorKit never depends on Tiny Projects. The rest of the page is everything a row's chips do, laid out
+  as a page in Runner and Publisher's dark amber look (a private copy of their palette). It has
+  a fixed header (icon, name, path, category and branch pills, **Publish / Run / New
+  <agent>**), then scrolling cards: **Code** (Continue, Codex, Studio, MobileApp, Finder,
+  Terminal), **GitHub** (status summary, up to 6 changed files, the Ship button labelled
+  Pull / Push… / Merge → main… / Up to date, Fetch), **Run** (Runner, dev server, start script,
+  digest; otherwise an "Add to Runner config…" button), **Publish**, and **Icon** (which file
+  is used, plus **Choose icon…**). Run and Publish call the host's closures; Appos opens the
+  pane.
+- `ProjectIcons.image(for:)` / `ProjectIconView(project:size:)`. The first match wins:
+  1. `<project>/.appos/icon.{png,jpg,jpeg,icns,svg}`. **Choose icon…** copies the picked file
+     there, deleting any older `icon.*`, then reloads.
+  2. The Play listing icon (`distribution/android/playstore_metadata/en-US/images/icon.png`),
+     else `mipmap-xxxhdpi/ic_launcher.{png,webp}` under `androidApp|composeApp|app/src/*/res`.
+     Look in `appDir`, then `MobileApp/`, then the project root.
+  3. An iOS app icon: the largest PNG in an `Assets.xcassets/AppIcon.appiconset`, searched
+     breadth-first up to four folders below the same three places (skip `Pods`,
+     `DerivedData`, `build`, `.build`, dot-folders). An App Store-only app (no Android
+     module) has nothing else.
+  4. A web icon (`apple-touch-icon.png`, `icon.png`, `favicon.png`, `logo.png`, `icon.svg`,
+     `favicon.svg`, `favicon.ico`) under `public/`, `app/`, `static/`, `src/app/`, `assets/`
+     or the root of the project, of its dev-server `dir`, and of each direct child folder.
+     Skip `node_modules`, `build`, `dist`, `Pods`.
+  5. Otherwise the project's initials (two words → two initials, CamelCase → its capitals) on
+     a gradient with a stable hue hashed from the name.
+
+  Cache the result per path, because the sidebar redraws often.
+- `Gem` (public): the tool gems, used by the page's Publish/Run buttons and by Appos.
+  Standalone Operator's header shows `Gem("operator")` instead of the rocket emoji.
+- `OperatorEmbed.ship(path:)`: what `operator://ship` does (resolve with
+  `Scanner.project(containing:)`, then `Ship.review`), so Publisher's "Commit & push…" can
+  open the review inside Appos. `OperatorEmbed.runInTerminal(_:)` and `projectsRoot` cover
+  Appos's Rebuild button and where it finds the sibling checkouts.
+
+Gotcha: in an `NSHostingView` snapshot (`cacheDisplay`), a page whose **root** is a
+`ScrollView` came out blank, while the same content in a `VStack` drew fine. Give the page a
+fixed header and put only the cards in the `ScrollView`, the shape Publisher's tabs use.
 
 ## 5. Don'ts
 
