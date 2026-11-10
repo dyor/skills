@@ -1,7 +1,7 @@
 ---
 name: build-publisher
 description: Build "Publisher", a macOS app for shipping mobile builds to Google Play and the App Store/TestFlight without a terminal - pre-flight checks, one-click Build & Upload to the internal track with a safe version code, promote internal to closed testing to production, store-listing diff and upload (text, icon, screenshots), iOS TestFlight upload and App Review submission, release notes, a publish lock, and a "ready to publish" gate (committed, pushed, backend deployed, tests passed). Plain Swift package with fastlane/Ruby/shell scripts bundled in this skill. Use when the user says "build Publisher", "set up one-click Play/TestFlight publishing", or asks for /dyor-knowledge-base publisher. Built as PublisherKit + a thin app, so Appos (build-appos) can show it inside its window. Mac only. Companion skills - build-operator, build-runner, build-appos, play-prepublish-check, google-play-publishing.
-version: 1.2.0
+version: 1.2.1
 ---
 
 # Build Publisher
@@ -30,8 +30,11 @@ before the next** (section 2). Do not try to land everything at once.
    service-account JSON key with Play Console access, and a release keystore? If not, explain
    each (section 7) and build only what they can use; the Play parts can wait.
 4. **iOS: do they have** an App Store Connect app record, an App Store Connect API key (`.p8`,
-   with key id and issuer id), and the Apple ID signed in to Xcode? Same: the API cannot create
-   the app record.
+   with key id and issuer id), the Apple ID signed in to Xcode, **and an `Apple Distribution`
+   certificate in this Mac's Keychain**? (Signing in to Xcode only creates an *Apple Development*
+   cert by default; check with `security find-identity -v -p codesigning` and walk them through
+   creating the Distribution cert in Xcode if missing — see section 7.) Same: the API cannot
+   create the app record.
 5. **Firebase backend** (Cloud Functions) that must be deployed before releases? Same
    `firebase` block as Runner (project id, `only`, `testCommand`, `paths`).
 6. Bundle id prefix, icon, and where the Mac's `fastlane`/Ruby come from (see prerequisites).
@@ -39,7 +42,8 @@ before the next** (section 2). Do not try to land everything at once.
 **Prerequisites** (verify; tell the user, never silently install system software):
 - Xcode command-line tools; **full Xcode** for iOS archive/upload (verify via `xcodebuild -version`,
   not `/Applications/Xcode.app` existence, as versioned bundles like `/Applications/Xcode_26.x.app`
-  are common).
+  are common), plus an **`Apple Distribution` signing identity in Keychain** for any iOS app
+  (`security find-identity -v -p codesigning` must list `"Apple Distribution: ..."`).
 - **Ruby 3+ with Bundler / Fastlane**, and in each app's `appDir`: a `Gemfile` declaring
   `fastlane` (`googleauth` and `jwt` are often transitive in `Gemfile.lock` rather than listed
   directly in `Gemfile`, so accept either). **Two macOS Ruby traps to guard against in Swift**:
@@ -137,6 +141,19 @@ block — support both literal integers and multi-line version-catalog reference
 blocks builds; actions that only talk to Play (listing, promote, pull) need just the tooling
 and the service-account key, so a missing upload keystore does not lock the user out of the
 store listing.
+
+### Pre-flight (iOS), shown on the App Store side
+
+When an app has an `ios` block, check and explain clearly before starting a multi-minute archive:
+`appDir` and `<ios.project>/project.pbxproj` exist; `Gemfile` / fastlane gems ready; full Xcode
+installed (`xcodebuild -version`); **`Apple Distribution` certificate in Keychain**
+(`security find-identity -v -p codesigning` contains `"Apple Distribution:"` — blocks builds only;
+if missing, tell the user: *Xcode -> Settings -> Accounts -> select Apple ID -> Manage
+Certificates... -> `+` -> Apple Distribution; once it appears in solid black with blank Status it
+is already in Keychain — click Done, nothing to download*); **App Store Connect API key (`.p8`)**
+configured in `appStoreConnect` (`keyId`, `issuerId`, `keyPath`) and file present on disk; **no
+publish in progress** (lock). Local store-listing edits and the HTML preview still work before the
+API key is configured.
 
 ### The publish lock
 
@@ -360,9 +377,33 @@ deploy" list. Re-read this whenever the app becomes active or a run finishes.
   account in Play Console -> Users and permissions with release permissions, download its JSON
   key to the (gitignored) path in config.
 - Generate a release keystore and `keystore.properties`; **back both up outside the repo**.
-- For iOS: create the app record in App Store Connect; create an API key (Users and Access ->
-  Integrations), save the `.p8` to `~/.appstoreconnect/private_keys/`; sign in to Xcode with
-  the Apple ID that has the distribution role.
+- **For iOS** (give the user these exact steps when setting up an iOS app — Xcode and App Store
+  Connect UIs are confusing here):
+  1. **App Store Connect app record**: create the app in App Store Connect with matching bundle id
+     (the API cannot create app records).
+  2. **Apple Distribution certificate in Xcode** (signing in to Xcode alone only creates an *Apple
+     Development* cert, NOT a Distribution cert):
+     - Open **Xcode -> Settings (`⌘,`) -> Accounts**, sign in with the Apple ID on the team, select
+       the account/team, and click **Manage Certificates...**.
+     - Click **`+` (bottom-left) -> Apple Distribution**.
+     - **Important UI gotcha**: Xcode generates the private key locally and installs the certificate
+       straight into this Mac's Keychain — **there is nothing to download**. As soon as `Apple
+       Distribution` appears in **solid black text with a blank `Status` column**, click **Done**
+       (greyed-out rows marked `Not in Keychain` belong to other Macs and can be ignored). Verify
+       with `security find-identity -v -p codesigning`.
+     - *(Only if Apple refuses because the account hit its maximum distribution certificate limit:
+       either export an existing `Apple Distribution` cert + private key as a `.p12` from Keychain
+       Access on another Mac and import it here, or revoke an unused cert.)*
+  3. **App Store Connect API key (`.p8`)**:
+     - Open `https://appstoreconnect.apple.com/access/integrations/api` (**Users and Access ->
+       Integrations -> App Store Connect API**).
+     - Click **`+`** to generate a key, name it (e.g. `<Mac> Publisher`), and choose **App Manager**
+       access.
+     - Click **Download API Key** (Apple only lets you download a `.p8` once; on a second Mac it is
+       often easiest to generate a new key rather than copying the old `.p8`) and move
+       `AuthKey_<KEY_ID>.p8` to `~/.appstoreconnect/private_keys/AuthKey_<KEY_ID>.p8`.
+     - Copy the **Issuer ID** (top of that page) and **Key ID** into `config.json`:
+       `"appStoreConnect": { "keyId": "<KEY_ID>", "issuerId": "<ISSUER_UUID>", "keyPath": "~/.appstoreconnect/private_keys/AuthKey_<KEY_ID>.p8" }`.
 - Put `.publisher.lock`, key files, keystores, `distribution/ios/build/` in `.gitignore`.
 - For deeper Play behavior (tracks cannot be deleted, tester invites, AD_ID, "App not
   available"), point them to the `google-play-publishing` skill, and to
