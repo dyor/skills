@@ -1,7 +1,7 @@
 ---
 name: build-publisher
-description: Build "Publisher", a macOS app for shipping mobile builds to Google Play and the App Store/TestFlight without a terminal - pre-flight checks, one-click Build & Upload to the internal track with a safe version code, promote internal to closed testing to production, store-listing diff and upload (text, icon, screenshots), iOS TestFlight upload and App Review submission, release notes, a publish lock, and a "ready to publish" gate (committed, pushed, backend deployed, tests passed). Plain Swift package with fastlane/Ruby/shell scripts bundled in this skill. Use when the user says "build Publisher", "set up one-click Play/TestFlight publishing", or asks for /dyor-knowledge-base publisher. Built as PublisherKit + a thin app, so Appos (build-appos) can show it inside its window. Mac only. Companion skills - build-operator, build-runner, build-appos, play-prepublish-check, google-play-publishing.
-version: 1.2.1
+description: Build "Publisher", a macOS app for shipping mobile builds to Google Play and the App Store/TestFlight without a terminal - pre-flight checks, one-click Build & Upload to the internal track with a safe version code, promote internal to closed testing to production, store-listing diff and upload (text, icon, screenshots), iOS TestFlight upload and App Review submission, release notes, a publish lock, store-watch notifications (live, approved, rejected, new release live), and a "ready to publish" gate (committed, pushed, backend deployed, tests passed). Plain Swift package with fastlane/Ruby/shell scripts bundled in this skill. Use when the user says "build Publisher", "set up one-click Play/TestFlight publishing", or asks for /dyor-knowledge-base publisher. Built as PublisherKit + a thin app, so Appos (build-appos) can show it inside its window. Mac only. Companion skills - build-operator, build-runner, build-appos, play-prepublish-check, google-play-publishing.
+version: 1.3.0
 ---
 
 # Build Publisher
@@ -256,6 +256,30 @@ log** (`~/Library/Application Support/Publisher/activity.json`: date, app, title
 8. **What's next** card: derive the single next step from pre-flight, git, tracks, and whether
    the public store page exists: commit -> publish internal -> test -> promote -> send for
    review -> live. A blocking pre-flight failure or a run in progress comes back alone.
+
+8b. **Store watch** (both stores, no credentials needed for the public half). Approvals often
+   arrive with no email, so Publisher watches and notifies (macOS notification) on its own:
+   - **Public pages, every 30 minutes** and on every refresh: GET the Play page
+     (`play.google.com/store/apps/details?id=<pkg>&hl=en_US&gl=US`; 200 = public, 404 = not)
+     and Apple's lookup (`itunes.apple.com/lookup?bundleId=<id>&country=us`; `resultCount>0`
+     = on sale, with `version`, `releaseDate`, `currentVersionReleaseDate`, `trackViewUrl`).
+   - **Went live**: a page seen missing, then present -> "🎉 <app> is live on Google Play / the
+     App Store", and record the date ("live since"). An app already live when first checked
+     gets no date rather than a wrong one.
+   - **New release live**: Play's API never says a release passed review, but the public
+     page's "Updated on <date>" changes when one goes live; on the App Store the lookup's
+     `version` changes. Persist the last marker per app and store; notify on a change, never
+     on the first value seen.
+   - **App Review result** (iOS): App Store Connect state per version, persisted; a move out of
+     `WAITING_FOR_REVIEW`/`IN_REVIEW` to `PENDING_DEVELOPER_RELEASE` / `PENDING_APPLE_RELEASE` /
+     `READY_FOR_SALE` notifies "approved", to `REJECTED` (or metadata/binary rejected) notifies
+     "rejected". The half-hourly check re-reads versions only, not the listing.
+   - **Show it**: the sidebar line leads with "Live ·" while the current platform's public page
+     is up (unless something blocks); the Production / App Store cards link to the public page
+     with "live since", Play's "updated" date and the App Store's first and current release
+     dates. A first production release that Play still reports as "draft" shows "● Live" once
+     the public page exists.
+   - Keep these in `UserDefaults` (`liveSince`, `lastPublic`, `publicRelease`, `reviewStates`).
 
 ### Phase 3 - iOS / TestFlight / App Review
 

@@ -1,7 +1,7 @@
 ---
 name: google-play-publishing
 description: How publishing and testing on Google Play actually behaves, learned the hard way shipping Golf Sparks. Use when releasing an Android app to Play (internal, closed testing, production), when a tester sees "App not available", when an upload fails a declaration check such as AD_ID, when deciding which track to publish to, or when writing public copy that offers an Android beta. Also compares TestFlight.
-version: 1.2.0
+version: 1.3.0
 ---
 
 # Google Play publishing (`google-play-publishing`)
@@ -47,6 +47,8 @@ Golf Sparks implements this in Publisher: `scripts/play_release.rb` (single edit
 - `versionCode` only has to increase (Play orders by it); `versionName` is a free label and can look "backwards".
 - `edits:validate` checks an edit without committing; useful for a dry run. Delete abandoned edits.
 - A promotion copies the source release including its release notes; pass `version_code` and the notes file to set notes on the destination.
+
+- **Approval is silent.** Play often sends no email when a production release passes review, and the API never says it passed (a first release can still read `draft`). The signal is public: the store page (`play.google.com/store/apps/details?id=<pkg>`) returns 200 once the app is live, and its "Updated on <date>" changes when a later release goes live. Publisher watches both and notifies (build-publisher, "Store watch"). Golf Sparks went live with no email; its page showed "Updated on Nov 1, 2026".
 
 ## 5. Declarations that bite
 - **Advertising ID:** libraries can merge `com.google.android.gms.permission.AD_ID` in. If the app shows no ads, add `<uses-permission android:name="com.google.android.gms.permission.AD_ID" tools:node="remove" />` and check the *built AAB* (strings of `base/manifest/AndroidManifest.xml`), not just the merged manifest. Declare "No" only if the permission is truly absent from every live release.
