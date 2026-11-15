@@ -1,7 +1,7 @@
 ---
 name: google-play-publishing
 description: How publishing and testing on Google Play actually behaves, learned the hard way shipping Golf Sparks. Use when releasing an Android app to Play (internal, closed testing, production), when a tester sees "App not available", when an upload fails a declaration check such as AD_ID, when deciding which track to publish to, or when writing public copy that offers an Android beta. Also compares TestFlight.
-version: 1.3.0
+version: 1.3.1
 ---
 
 # Google Play publishing (`google-play-publishing`)
@@ -46,6 +46,8 @@ Golf Sparks implements this in Publisher: `scripts/play_release.rb` (single edit
 - Release notes are limited to **500 characters** (UTF-16 units, an emoji counts 2). Over the limit the whole upload fails.
 - `versionCode` only has to increase (Play orders by it); `versionName` is a free label and can look "backwards".
 - `edits:validate` checks an edit without committing; useful for a dry run. Delete abandoned edits.
+- Promoting a tested build to production (or App Store review from TestFlight) is its own workstream: Publisher runs no local readiness checks (uncommitted files, tests) for it.
+- An app that's already live: Play's API shows a production release as `completed` while it is still in review and can't report a rejection. The public page's "Updated on" date changing after the promotion is the signal it went live.
 - A promotion copies the source release including its release notes; pass `version_code` and the notes file to set notes on the destination.
 
 - **Approval is silent.** Play often sends no email when a production release passes review, and the API never says it passed (a first release can still read `draft`). The signal is public: the store page (`play.google.com/store/apps/details?id=<pkg>`) returns 200 once the app is live, and its "Updated on <date>" changes when a later release goes live. Publisher watches both and notifies (build-publisher, "Store watch"). Golf Sparks went live with no email; its page showed "Updated on Nov 1, 2026".

@@ -83,6 +83,16 @@ else
   echo "keeping build number $NEXT"
 fi
 
+# Publish to both stores: one build number for the release on both stores.
+MIN_BUILD=${PUBLISHER_MIN_BUILD:-0}
+if [ "$MIN_BUILD" -gt "$NEXT" ]; then
+  /usr/bin/sed -i '' "s/CURRENT_PROJECT_VERSION = $NEXT;/CURRENT_PROJECT_VERSION = $MIN_BUILD;/g" "$PBXPROJ"
+  SPEC="${PROJECT:h}/project.yml"
+  [ -f "$SPEC" ] && /usr/bin/sed -i '' -E "s/(CURRENT_PROJECT_VERSION: *\"?)$NEXT(\"?)/\1$MIN_BUILD\2/" "$SPEC"
+  echo "raising build number $NEXT -> $MIN_BUILD to match the release's build number"
+  NEXT=$MIN_BUILD
+fi
+
 OUT="$APP_DIR/distribution/ios/build"
 ARCHIVE="$OUT/$SCHEME.xcarchive"
 mkdir -p "$OUT"
@@ -95,9 +105,32 @@ if [ "${SIGN_WITH_API_KEY:-0}" = "1" ]; then
   AUTH+=(-authenticationKeyPath "$KEY_PATH" -authenticationKeyID "$KEY_ID" -authenticationKeyIssuerID "$ISSUER")
 fi
 
+# The Gradle daemon (4 GB) plus the Kotlin daemon (3 GB) don't fit beside leftovers on an
+# 8 GB Mac. Stop any idle daemons first so the archive starts with the memory to itself.
+if [ -x ./gradlew ]; then ./gradlew --stop >/dev/null 2>&1 || true; fi
+
+LOG="$OUT/archive.log"
+run_archive() {
+  xcodebuild archive -project "$PROJECT" -scheme "$SCHEME" -configuration Release \
+    -destination 'generic/platform=iOS' -archivePath "$ARCHIVE" "${AUTH[@]}" > "$LOG" 2>&1
+}
 echo "--- archiving $SCHEME (Release)"
-xcodebuild archive -project "$PROJECT" -scheme "$SCHEME" -configuration Release \
-  -destination 'generic/platform=iOS' -archivePath "$ARCHIVE" "${AUTH[@]}" | tail -n 25
+if ! run_archive; then
+  # macOS killing the Gradle daemon is transient and its progress is cached: stop what is
+  # left and retry once instead of failing after 10 minutes.
+  if grep -q "daemon disappeared unexpectedly" "$LOG"; then
+    echo "Gradle daemon was killed (low memory). Stopping daemons and retrying once…"
+    pkill -f GradleDaemon 2>/dev/null || true; pkill -f KotlinCompileDaemon 2>/dev/null || true
+    sleep 5
+    run_archive || true
+  fi
+fi
+if [ ! -d "$ARCHIVE" ]; then
+  echo "ARCHIVE FAILED. The real errors (full log: $LOG):"
+  grep -E "error:|^e: |What went wrong|daemon disappeared|Execution failed|Provisioning|requires a provisioning|No profiles" -A2 "$LOG" | head -40
+  exit 65
+fi
+tail -n 5 "$LOG"
 
 # destination=upload makes -exportArchive send the build to App Store Connect itself.
 DESTINATION=upload

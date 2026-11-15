@@ -1,7 +1,7 @@
 ---
 name: build-appos
 description: Build "Appos", a macOS home for Operator, Runner, Publisher and Tiny Projects in one window. Operator's project list (with an icon per project) sits on the left; the right side shows Operator's page for the selected project, and Run / Publish open Runner or Publisher for that project in place, closing back to Operator with Esc. Each tool stays a standalone app too, because each is split into a Kit library plus a thin app, and Appos links the Kits from the sibling checkouts. Plain Swift package, no Xcode project. Use when the user says "build Appos", "put Operator, Runner and Publisher in one app", "one dock app for my tools", or asks for /dyor-knowledge-base appos. Mac only. Requires build-operator; build-runner, build-publisher and build-tiny-projects are optional.
-version: 1.0.0
+version: 1.0.1
 ---
 
 # Build Appos
@@ -98,8 +98,12 @@ Select All: Publisher's release notes need Paste) and Window.
      show "No task list" (dim).
   Git status is **not** in the list. It's on the project page's GitHub card. (Without Tiny
   Projects, fall back to the git summary.)
-- Footer links: **Fetch & Refresh** (`refreshGit(fetch: true)`), **Reload config** (Operator
-  rescan, plus `reload()` on every embed), **Rebuild & Relaunch** (`./rebuild.sh` in Terminal).
+- Footer links: **Refresh** (one button: Operator rescan plus `reload()` on every embed, then
+  `refreshGit(fetch: true)`; Publisher's `reload()` re-reads the stores too) and **Rebuild &
+  Relaunch** (`./rebuild.sh` in Terminal). Don't split refresh into "fetch" and "reload config":
+  users can't tell which one they need.
+- **Publish** opens Publisher on the app's **Shared** tab (its releases), never on whichever
+  store tab Publisher last showed.
 
 Only the sidebar observes the embeds (`@ObservedObject` on each). They forward every model
 change, including each log line, so keep the root view observing only Appos's own model.

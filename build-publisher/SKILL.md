@@ -1,7 +1,7 @@
 ---
 name: build-publisher
-description: Build "Publisher", a macOS app for shipping mobile builds to Google Play and the App Store/TestFlight without a terminal - pre-flight checks, one-click Build & Upload to the internal track with a safe version code, promote internal to closed testing to production, store-listing diff and upload (text, icon, screenshots), iOS TestFlight upload and App Review submission, release notes, a publish lock, store-watch notifications (live, approved, rejected, new release live), and a "ready to publish" gate (committed, pushed, backend deployed, tests passed). Plain Swift package with fastlane/Ruby/shell scripts bundled in this skill. Use when the user says "build Publisher", "set up one-click Play/TestFlight publishing", or asks for /dyor-knowledge-base publisher. Built as PublisherKit + a thin app, so Appos (build-appos) can show it inside its window. Mac only. Companion skills - build-operator, build-runner, build-appos, play-prepublish-check, google-play-publishing.
-version: 1.3.0
+description: Build "Publisher", a macOS app for shipping mobile builds to Google Play and the App Store/TestFlight without a terminal - pre-flight checks, one-click Build & Upload to the internal track with a safe version code, promote internal to closed testing to production, store-listing diff and upload (text, icon, screenshots), iOS TestFlight upload and App Review submission, release notes, a publish lock, store-watch notifications (live, approved, rejected, new release live), release flows (cut a release from the commits since the last one, one build number on both stores, then follow it through testing and review to live on each store, checked hourly), and a release gate (backend deployed and tests passed required; committed and pushed advised, uncommitted files set aside during the build). Plain Swift package with fastlane/Ruby/shell scripts bundled in this skill. Use when the user says "build Publisher", "set up one-click Play/TestFlight publishing", or asks for /dyor-knowledge-base publisher. Built as PublisherKit + a thin app, so Appos (build-appos) can show it inside its window. Mac only. Companion skills - build-operator, build-runner, build-appos, play-prepublish-check, google-play-publishing.
+version: 1.4.0
 ---
 
 # Build Publisher
@@ -74,11 +74,14 @@ ground `#111210`, surface `#1A1B18`, accent amber `#F2B23A`, ok `#5CCB8C`, bad `
 
 **Sidebar**: every app from `config.json` with icon and a one-line status: blocked (red, for
 example "Upload key missing"), pending (amber, "N listing changes"), or healthy (green, what is
-on internal). Buttons: Fetch Store Data, Reload Config, Rebuild & Relaunch.
+on internal). Buttons: **Refresh** (re-reads config.json, then both stores; one button, not
+"fetch" plus "reload config") and Rebuild & Relaunch.
 
-**Per app, tabs**: **Overview**, **Store**, **Activity**, and **Shared** (the repo-level
-readiness checklist, section 5). Apps with iOS get a **Google Play | App Store** switch in the
-header; the same tabs then show the App Store side.
+**Per app, tabs**: **Shared** (releases, section 5), **Overview**, **Store**, **Activity**.
+**Picking an app always opens Shared with no store selected**: the Google Play | App Store
+switch shows neither, and store-only buttons (Tester link, Play Console, App Store Connect)
+are hidden. Choosing a store opens its Overview. Never carry the previous app's store or tab
+over (`selected` didSet resets `tab` and `platform` when the app changes).
 
 **Run banner**: what is running (with **Cancel**), or the result of the last run.
 
@@ -141,6 +144,18 @@ block — support both literal integers and multi-line version-catalog reference
 blocks builds; actions that only talk to Play (listing, promote, pull) need just the tooling
 and the service-account key, so a missing upload keystore does not lock the user out of the
 store listing.
+
+**Memory for the build** (pre-flight, iOS and Android; skipped while Publisher's own publish
+runs): a build needs ~7 GB (Gradle 4 GB + Kotlin daemon 3 GB), so on an 8 GB Mac macOS kills
+the Gradle daemon ~10 minutes into an archive ("Gradle build daemon disappeared
+unexpectedly", exit 65 in *Compile Kotlin Framework*). Block when another `xcodebuild` or
+`gradlew` is running, or when RAM <= 8 GB and the Android emulator or Android Studio is open
+(`ps -axo pid=,rss=,command=`). `ios_upload.sh` also runs `./gradlew --stop` before the
+archive, writes the archive log to `distribution/ios/build/archive.log`, prints the real
+error lines on failure, and retries once if the daemon was killed. Pre-flight is read while
+SwiftUI draws, so **never `waitUntilExit()` there**: it spins the run loop, a layout pass runs
+inside another, and the app aborts at launch (AttributeGraph precondition failure). Read the
+pipe to EOF, poll `isRunning`, and cache the result for a few seconds.
 
 ### Pre-flight (iOS), shown on the App Store side
 
@@ -234,7 +249,8 @@ log** (`~/Library/Application Support/Publisher/activity.json`: date, app, title
 6. **Promote** (internal -> closed testing -> production), **no rebuild**, so the exact
    artifact testers validated ships. `fastlane run upload_to_play_store` with
    `track:<from> track_promote_to:<to> skip_upload_apk/aab:true skip_upload_metadata/images/
-   screenshots:true`. **Always confirm first**, and treat production as critical.
+   screenshots:true`. **Always confirm first**, and treat production as critical. **Run no
+   shared-readiness or local checks** (only tooling + service-account key).
    - A never-live ("draft") app only accepts `track_promote_release_status:draft`, and the API
      cannot send a draft for review: tell the user to press **Send changes for review** in Play
      Console and give an "I've sent it for review" button, since Play's API reports a rejected
@@ -298,8 +314,17 @@ log** (`~/Library/Application Support/Publisher/activity.json`: date, app, title
     distribution certificate needs an Admin role an App Manager key lacks ("Cloud signing
     permission error"). `SIGN_WITH_API_KEY=1` signs with an Admin key instead.
 11. **Submit for review...** (`appstore_submit.rb`): attaches the newest processed build to
-    the App Store version and submits. Always confirms. Anything ASC still needs (screenshots,
-    privacy answers, export compliance) comes back as its message and nothing is submitted.
+    the App Store version and submits. Always confirms. The button lives on the **TestFlight
+    card** ("Promote 1.1 (9) to App Store...") exactly like Play's Promote on the Internal card.
+    **No local checks**: no shared-readiness gate, no Xcode/signing/memory pre-flight (only the
+    ASC key is needed), because promoting an already-tested build is separate from local work.
+    **"What's New in This Version" is required for every update** (Apple: "You must provide a
+    value for the attribute 'whatsNew'"), and the version is created and the build attached
+    before that error, so the version is left "Preparing" with the build on it. Pass the
+    release notes as a file and set `whatsNew` on every localization that lacks it (skip for
+    the app's first version). Keep Promote available for an editable version that already has
+    the build attached, or a refused submit hides the button. Anything else ASC needs comes back
+    as its message and nothing is submitted.
 12. **App Store listing** (`appstore_listing.rb`): fastlane-deliver layout under
     `distribution/ios/appstore_metadata/{texts,screenshots}/en-US/`, field limits (name and
     subtitle 30, keywords 100, promotional text 170, description 4000), screenshots compared
@@ -314,15 +339,17 @@ log** (`~/Library/Application Support/Publisher/activity.json`: date, app, title
 
 ### Phase 4 - Shared readiness, Firebase, polish
 
-14. **Shared tab** (below), Firebase card, menu-bar item, `publisher://` links, snapshot env
-    var for screenshots.
+14. **Shared tab and release flows** (section 5), Firebase card, menu-bar item,
+    `publisher://` links, snapshot env var for screenshots.
 
 ## 3. Menu bar and links
 
 `NSStatusItem` with the same actions as the window (Publish, Store Listing, Tester Link,
 Play Console). Keep the Dock tile (`setActivationPolicy(.regular)`). `publisher://open?package=
-<packageName or bundleId>` selects an app (Operator's **Publish** button sends it); if it
-arrives at cold launch, store the selection and show the window after.
+<packageName or bundleId>` selects an app on its Shared tab (Operator's **Publish** button
+sends it); `&tab=shared|overview|store|activity` and `&store=play|ios` open a specific tab (handy
+for screenshots and deep links). If it arrives at cold launch, store the selection and show the
+window after.
 
 ### Inside Appos
 
@@ -340,7 +367,7 @@ Follow recipe §9. For Publisher specifically:
   once, on the first `show(package:)`, and re-reads git on `didBecomeActive` as the
   AppDelegate does.
 - `show(package:)` matches `packageName`, `id` or `iosBundleId`, because App Store-only apps
-  have no Android package. `runningPackage` returns the running project's `id`.
+  have no Android package, and always sets the Shared tab. `runningPackage` returns the running project's `id`.
 - The Shared tab's **Commit & push…** checks `PublisherEmbed.openShip` before opening
   `operator://ship`.
 - Every tab scrolls on its own, so the window's `minHeight` is 460, not 700. The sidebar's app
@@ -357,31 +384,93 @@ Follow recipe §9. For Publisher specifically:
   Play but nothing is submitted for review until the user presses **Send for review** in the
   Console (or confirms a promote that sends it).
 
-## 5. Shared readiness (the gate every publish waits on)
+## 5. Releases: from commits to live on both stores
 
-Repo-level work that must be finished before *anything* goes to a store. `blockers` for an app
-is the list of what is not true yet; a store action with any blocker **refuses to start** and
-prints them. The Shared tab shows a banner ("Ready to publish" / "Not ready: N items") and
-the checklist:
+A **release** is the set of commits since the last release, built once with one version and
+build number on both stores ("1.1 (9)"), then worked through testing and review until it is
+live on Google Play and the App Store. Several can be in flight at once (one in review, the
+next being tested). The **Shared** tab is where releases live.
 
-1. **Committed**: `git status --porcelain -uall` empty (excluding release bookkeeping, matched
-   repo-root-aware when `appDir` is a subfolder like `MobileApp/`).
-2. **Pushed**: `git rev-list --count @{u}..HEAD` is 0; no upstream is also a blocker.
-3. **Backend deployed** (only with a `firebase` block): not behind the last deploy.
-   Compute exactly as in `build-runner` section 5 and share the same
-   `~/Library/Application Support/Publisher/firebase_deploys.json` log (decode ISO-8601 dates
-   both with and without `.withFractionalSeconds` so entries written by either Runner or
-   Publisher parse cleanly). A Firebase card on Overview shows deployed-at, commits since,
-   uncommitted files, and a **Deploy** button that always confirms and runs `testCommand` first
-   (`<test> && firebase deploy --only <target> --project <id> --non-interactive`), recording
-   HEAD (captured at the start) on success.
-4. **Tests passed on this commit** (only when `firebase.testCommand` is set): a marker file
-   `~/Library/Application Support/Publisher/tests/<appId>-<sha>` written whenever `testCommand`
-   succeeds on a clean tree (including during a Firebase deploy from either Runner or
-   Publisher), so a new commit invalidates it.
+### The Next release card (Shared tab)
 
-Also show per-platform "commits since the last upload", and a "changes since last Firebase
-deploy" list. Re-read this whenever the app becomes active or a run finishes.
+In this order:
+
+1. **Commits since the last release** first, because they *are* the release: "3 commits since
+   1.1 (9)", a chevron that turns down to list every commit (short SHA, subject, when). The
+   baseline is the newest release flow's commit, else the highest upload record in
+   `releases.json`; `git log <base>..HEAD` over the whole repo, minus `chore(release)…` and
+   version-number-only commits. No new commits: Publish is disabled ("Nothing new to release").
+2. **Committed (Optional)**: uncommitted files are *not* part of the release. Every build
+   (both stores, Play internal, TestFlight) stashes them first and restores them when the run
+   ends, success or failure (`git stash push --include-untracked -- ':(top)<path>'…`, then
+   `trap … EXIT` with `git stash pop`; on a pop conflict say the files are safe in `git stash`).
+   `git status --porcelain` paths are repo-root relative even when `appDir` is a subfolder,
+   hence `:(top)`. Leave release bookkeeping (versionCode-only bumps, changelogs) and
+   `.publisher.lock` unstashed: the upload rewrites the first, and the lock must stay.
+3. **Pushed to GitHub (Optional)**: advised, never required.
+4. **Firebase (Required)**, only with a `firebase` block: not behind the last deploy. Required
+   because Publisher can't know whether the release needs the new functions. Compute exactly
+   as in `build-runner` section 5 and share `~/Library/Application Support/Publisher/
+   firebase_deploys.json` (decode ISO-8601 dates with and without fractional seconds). A
+   Firebase card shows deployed-at, commits since, uncommitted files, and **Deploy** (always
+   confirms, runs `testCommand` first, records HEAD captured at the start).
+5. **Tests (Required)**, when `firebase.testCommand` is set: a marker
+   `~/Library/Application Support/Publisher/tests/<appId>-<sha>` written whenever the command
+   passes on a clean tree (from Runner or Publisher), so a new commit invalidates it.
+6. **Release notes**, one box for TestFlight's What to Test, Play's release notes and the App
+   Store's What's New, with **Fill from commits** (bullets of the commit subjects, within Play's
+   500 characters).
+7. **Publish 1.1 (10) to both stores**, enabled when the required items are done, pre-flight
+   has no red items and there is at least one commit. One run, one lock, one log:
+   `ios_upload.sh`, then `./gradlew --stop`, then `android_upload.sh` (internal), strictly
+   sequential and `set -e` (memory; a failed App Store upload means Play never gets a build the
+   App Store didn't). The build number is `max(Play highest + 1, ASC highest + 1, recorded + 1,
+   source)`, passed as `PUBLISHER_MIN_BUILD`, which both scripts use as a floor so the release is
+   the same number on both stores. On success record both uploads and create the release flow
+   (version, build, HEAD, notes).
+
+Only Firebase and Tests are `blockers`; uncommitted and unpushed are `warnings`. Build actions
+check `blockers`; **promotions never check anything local** (they ship an artifact that was
+already built and tested).
+
+### Release flows
+
+Persist one record per release in `~/Library/Application Support/Publisher/release_flows.json`:
+app, version, build, commit, notes, created, `playPromoted` (+ Play's public "Updated on" date at
+that moment), `iosPromoted`, `playLive`, `iosLive`, `completed`, `archived`. **Read every stage
+from the stores, not from the record**, so a promotion made in Play Console or App Store Connect
+still counts; the record only holds what the stores can't say.
+
+| Stage | Google Play | App Store |
+|---|---|---|
+| Testing | internal (or closed) holds the build | build `VALID` in TestFlight (`PROCESSING` = processing) |
+| Review | production holds the build; a draft on a never-live app needs **Send for review** in the Console | version with this build `WAITING_FOR_REVIEW` / `IN_REVIEW`; `PENDING_*_RELEASE` = approved; `REJECTED` |
+| Live | public page's "Updated on" changed since the promotion (or, for a release promoted elsewhere, is on/after its upload day), or the user presses **It's live** | version with this build `READY_FOR_SALE` |
+| Replaced | a newer build reached production / internal | a newer build went live or replaced it |
+
+Play's API can't report review or rejection on an app that's already live, hence the public page
+date and the manual fallback. **Discover** releases on every store read: anything newer than
+what's live on each store becomes a flow (newest build per version), so releases uploaded before
+flows existed, or from another Mac, appear too. A release completes when both stores are live or
+replaced; notify "🎉 <app> 1.1 (9) is out" then. Keep the last snapshot of each store while a
+refresh runs, or every card blanks out mid-refresh.
+
+**Release card** (Shared tab, active ones on top, the last three shipped below): label, a status
+pill ("Testing · promote when good", "Awaiting review on both stores", "Shipped", "Rejected"),
+notes, commit, an Archive menu; the shared steps (Ready → Published); then one row per store
+with three steps (Internal testing → Production review → Live on Google Play; TestFlight → App
+Review → Live on the App Store), the current one coloured with its short state ("Test on your
+iPhone", "Promoted · awaiting review"). **Clicking a row opens that store's Overview.**
+
+**Release hero** (top of each store's Overview, for the oldest release still moving there):
+"Test 1.1 (9) on your Android phone / iPhone" with numbered steps, the tester link or
+TestFlight, and a big **green** "Promote 1.1 (9) to production / to the App Store" button; then
+"promoted — awaiting Google/Apple review" with **Check now** (and **It's live on Google Play**);
+approved, rejected, and Play-draft states get their own words. A footer line shows the other
+store's stage and links there. The older pipeline "what's next" cards it covers are hidden.
+
+**Polling**: every hour (`AppModel.init`, so it runs inside Appos too), apps with an active
+release get a full read of Play and App Store Connect; the rest get the public-page check.
 
 ## 6. Verification checklist (give the user this at the end)
 
@@ -389,7 +478,7 @@ deploy" list. Re-read this whenever the app becomes active or a run finishes.
 - Overview shows real data from Play (and ASC if configured). No red pre-flight items, or the
   red items are explained and match reality.
 - `Store` tab shows unchanged/changed rows against their local metadata.
-- `Shared` tab banner matches `git status`.
+- `Shared` tab: the commit count matches `git log <last release>..HEAD`, and the Committed row matches `git status`.
 - **Nothing was published during setup.** Say so explicitly and list what you ran (snapshots
   only, `DRY_RUN=1` iOS export if requested).
 

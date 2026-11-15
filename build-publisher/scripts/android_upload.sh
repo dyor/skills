@@ -122,6 +122,15 @@ else
   echo "keeping versionCode $NEXT"
 fi
 
+# Publish to both stores: Publisher passes one build number for the release, so Play's
+# versionCode matches the App Store build (1.1 (9) on both).
+MIN_BUILD=${PUBLISHER_MIN_BUILD:-0}
+if [ "$MIN_BUILD" -gt "$NEXT" ]; then
+  /usr/bin/sed -i '' "s/versionCode = $NEXT/versionCode = $MIN_BUILD/" "$GRADLE_FILE"
+  echo "raising versionCode $NEXT -> $MIN_BUILD to match the release's build number"
+  NEXT=$MIN_BUILD
+fi
+
 # supply reads release notes from <metadata>/<lang>/changelogs/<versionCode>.txt
 CHANGELOG_DIR="$META/en-US/changelogs"
 mkdir -p "$CHANGELOG_DIR"

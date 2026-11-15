@@ -5,14 +5,17 @@
 require "spaceship"
 
 bundle_id, key_id, issuer_id, key_path, build_number, notes_file = ARGV
-Spaceship::ConnectAPI.auth(key_id: key_id, issuer_id: issuer_id, filepath: File.expand_path(key_path))
+Spaceship::ConnectAPI.auth(key_id: key_id, issuer_id: issuer_id, filepath: key_path)
 app = Spaceship::ConnectAPI::App.find(bundle_id) or abort("no app for #{bundle_id}")
 notes = File.read(notes_file, encoding: "UTF-8").strip
 
 build = nil
 # Processing usually takes 5–20 minutes; give it up to 40.
 80.times do |i|
-  build = Spaceship::ConnectAPI::Build.all(app_id: app.id, version: build_number).first
+  # Filtering on `version:` server-side found nothing for a VALID build, so list the newest
+  # builds and match the build number here.
+  build = Spaceship::ConnectAPI::Build.all(app_id: app.id, sort: "-uploadedDate", limit: 30)
+                                      .find { |b| b.version.to_s == build_number.to_s }
   state = build&.processing_state
   puts "build #{build_number}: #{state || "not visible yet"}" if i % 4 == 0
   break if state == "VALID"
@@ -23,7 +26,7 @@ abort("build #{build_number} still processing; set notes later") unless build&.p
 
 loc = build.get_beta_build_localizations.find { |l| l.locale == "en-US" }
 if loc
-  loc.update(attributes: { whatsNew: notes })
+  Spaceship::ConnectAPI.patch_beta_build_localizations(localization_id: loc.id, attributes: { whatsNew: notes })
 else
   Spaceship::ConnectAPI.post_beta_build_localizations(build_id: build.id, attributes: { locale: "en-US", whatsNew: notes })
 end
