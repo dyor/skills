@@ -1,6 +1,7 @@
 ---
 name: android-review
-description: Conducts an exhaustive, rigorous Android and Kotlin Multiplatform (KMP) code review following Android Studio principal code review standards. Dynamically checks installed domain skills, discovers missing skills from android/skills and firebase/agent-skills, cross-references official Android documentation via search_android_docs, and audits main thread safety, lifecycle leaks, coroutines, platform interop, and actionable fix generation.
+description: Conducts an exhaustive, rigorous Android and Kotlin Multiplatform (KMP) code review following Android Studio principal code review standards. Dynamically checks installed domain skills, discovers missing skills from android/skills and firebase/agent-skills, cross-references official Android documentation, and audits main thread safety, lifecycles, coroutines, and platform interop. When a review is heading to Google Play, also checks https://google.play/business/vitals/ for current Android Vitals bad-behavior thresholds and runs a constrained Play-review emulator pass with embedded screenshots in the final report.
+version: 1.2.0
 ---
 
 # Android Change Review
@@ -21,7 +22,7 @@ This skill integrates three specialized pillars:
 
 ---
 
-## Review Methodology: 5-Phase Process
+## Review Methodology: 6-Phase Process
 
 ### Phase 0: Skills & Documentation Discovery (The Knowledge Mesh)
 
@@ -88,15 +89,40 @@ Scrutinize every modified file against these Android and KMP failure modes:
 - **JNI / C-Interop References:** Failure to release pinned memory, native pointers, or local references; missing null checks on nullable platform lookups.
 - **Device & OEM Divergence:** Relying on strict string matches from device metadata (e.g. `MediaMetadataRetriever` keys) instead of defensive checks that accommodate manufacturer variations.
 
-#### 5. Encapsulation & API Contracts
+#### 5. Encapsulation, Wake Locks & Play Vitals Thresholds
 - **State Flow Exposure:** Exposing `MutableStateFlow` or `MutableList` publicly instead of read-only `StateFlow` / immutable `List`.
 - **Contract Adherence & Nullability:** Respecting nullability contracts (e.g. returning `null` when a probe is indeterminate rather than fabricating `true` or `false`).
+- **Wake Locks & Foreground Services (Android Vitals):** Unconditional or multi-hour `PARTIAL_WAKE_LOCK` acquisitions held while paused/idle (violating Play Vitals' 1-hour Stuck Wake Lock and 2-hour/24h Excessive Partial Wake Locks thresholds), or `startForegroundService` calls risked while `Dispatchers.Main` is congested (`ForegroundServiceDidNotStartInTimeException` on Android 14+).
+
+---
+
+### Phase 2.5: Google Play Release Gate — Live Vitals Check & Constrained Emulator Pass *(Play Releases Only)*
+
+> **Scoping Rule:** **Skip Phase 2.5 on routine day-to-day PR, feature, or WIP code reviews.** Run Phase 2.5 **ONLY** when the changeset is heading to Google Play (e.g., invoked from `play-prepublish-check`, preparing an `internal`/`closed`/`production` Play upload, triaging a Play Store rejection, or when the user asks for a Play / release readiness review).
+
+#### 1. Live Google Play Vitals Audit (`https://google.play/business/vitals/`)
+Before building or signing off on a Play release, fetch/check **`https://google.play/business/vitals/`** (and its linked **"See all Android vitals metrics"** reference at `https://support.google.com/googleplay/android-developer/answer/9844486`) so the review reflects Google Play's latest Core Vitals and bad-behavior thresholds rather than stale assumptions. Audit the app against every active Play Vitals dimension:
+- **Stability Core Vitals:** User-perceived ANR rate (`< 0.47%` overall, `< 8%` per device model — input dispatching >5s) and User-perceived Crash rate (`< 1.09%` overall, `< 8%` per device model), plus R8 `proguard.map` / native symbol bundling inside the AAB.
+- **Battery & Wake Locks Core Vitals:** Excessive partial wake locks (`> 2–3h` cumulative background wake lock in 24h across `> 5%` of sessions) and Stuck partial wake locks (`>= 1h` continuous background lock). Confirm pause grace locks are bounded (e.g. `<= 5 min`) and active playback relies on audio-exempt APIs (`ExoPlayer.setWakeMode`).
+- **Memory & LMK Vitals:** User-perceived Low Memory Kills (LMK), Anonymous RSS + Swap, and **Bitmap Memory Usage** (ensure Coil/Glide requests specify `.size(...)` bounds rather than decoding full `3000×3000` `ARGB_8888` covers, and avoid eager startup allocation of giant dictionaries/models).
+- **Startup & UI Rendering Vitals:** Slow cold (`>= 5s`), warm (`>= 2s`), and hot (`>= 1s`) starts; Excessive slow frames (`> 50%` frames `> 16 ms`, including *Slow bitmap uploads > 3.2 ms* and *Slow UI thread > 8 ms*); and Excessive frozen frames (`> 0.1%` frames `> 700 ms`).
+- **Background Wake-ups, Scans, Network & Permission Denials:** Excessive `AlarmManager` wake-ups (`RTC_WAKEUP` / `ELAPSED_REALTIME_WAKEUP`), background Wi-Fi scans (`> 4/hr`), unprompted background mobile network usage (`> 50 MB/day`), and cold-launch runtime **Permission denials** (e.g. requesting `POST_NOTIFICATIONS` on cold `onCreate` before user context).
+
+#### 2. Constrained Play-Review Device Pass & Screenshot Capture
+Validate the live runtime experience on an Android emulator matching **Google Play's constrained review virtual device**:
+- **Constrained Play-Review Emulator Profile:** Boot an AVD with **2 GB RAM (`hw.ramSize=2048`)**, **256 MB ART heap ceiling (`vm.heapSize=256`)**, `google_apis_playstore` system image (prefer `ps16k` 16 KB page size when installed), and **no flagship-only AI hardware** (no Gemini Nano / Google AICore). Install the **R8-minified release build** whenever signing is configured (otherwise debug **without** any QA fixture/model-seeding flags).
+- **Four Mandatory Runtime Probes:**
+  1. **Probe A — Cold Launch & Baseline Heap:** Verify clean first frame (`< 5s` cold start, no cold-launch permission modal trap) and record `adb shell dumpsys meminfo <package>` against the 256 MB heap limit.
+  2. **Probe B — Heavy Real Payload & Input Responsiveness (ANR Check):** Open the heaviest real-world screen/feed (e.g. 4–5 MB XML/JSON responses, 500+ item `LazyColumn`, 3000×3000 remote artwork) and tap controls during load to verify zero UI freezes or `am_anr` events (`dumpsys gfxinfo <package>`).
+  3. **Probe C — Unavailable / Missing On-Device Model UX (`Broken Functionality` Check):** Exercise every feature backed by an on-device model (ML Kit GenAI / AICore, ML Kit Translate/Vision, downloadable ONNX/TFLite weights, local TTS) on this clean non-AICore device **before** optional downloads or where `FeatureStatus.UNAVAILABLE` is returned. Confirm graceful degradation with a working fallback path — **never** a crash, infinite spinner, or dead-end error screen.
+  4. **Probe D — Pause / Lock-Screen / Wake-Lock Audit:** Start and pause playback/background work, then inspect `adb shell dumpsys power` and `dumpsys media_session` to confirm bounded wake locks (`<= 5 min` pause grace) and working headset/media-button resumption.
+- **Capture & Embed Screenshots:** Capture PNG screenshots at each probe (`android screen capture` or `adb exec-out screencap -p > <reportDir>/<step>.png`; copy into `<artifactDir>/` when writing an artifact report) and embed every screenshot (`![Caption](/absolute/path/to/shot.png)`) in the final report.
 
 ---
 
 ## Phase 3: Review Document Structure
 
-Generate the review output using this standard Markdown format:
+Generate the review output using this standard Markdown format *(include the `Google Play Vitals & Constrained-Device Verification` section ONLY when Phase 2.5 applies)*:
 
 ```markdown
 # [Concise, Descriptive Title for Overall Changeset]
@@ -112,6 +138,18 @@ Generate the review output using this standard Markdown format:
 
 ### Authoritative Documentation Consulted
 - [Document Title](kb://... or URL): [Relevant API contract or threading model verified]
+
+## Google Play Vitals & Constrained-Device Verification *(Play Releases Only)*
+- **Live Vitals Audit (`https://google.play/business/vitals/`):** [Pass/Warn summary across Crash/ANR, Wake Locks, LMK & Bitmap Memory, Cold Start, Slow/Frozen Frames, Background Network/Wake-ups, and Permission Denials]
+- **Device Profile:** [AVD name · API level · RAM / `vm.heapSize` · Page size · AICore/Model availability · Build variant (Release R8 / Debug unseeded)]
+- **Memory, Frame & Wake-Lock Telemetry:** [`dumpsys meminfo` heap peak, `dumpsys gfxinfo` frozen frames, `am_anr` check, `dumpsys power` wake-lock bounds]
+- **Missing / Unsupported Model UX:** [What happens when on-device AI/ML models cannot run or aren't downloaded on the review device]
+
+| Probe | Scenario Tested | Verdict | Screenshot |
+| :--- | :--- | :--- | :--- |
+| 1. Cold Launch | [Summary] | PASS / FAIL | ![Cold Launch](/absolute/path/to/01_cold_launch.png) |
+| 2. Heavy Payload / ANR Check | [Summary] | PASS / FAIL | ![Heavy Payload](/absolute/path/to/02_heavy_payload.png) |
+| 3. Missing Model Fallback UX | [Summary] | PASS / FAIL | ![Model Fallback](/absolute/path/to/03_model_fallback.png) |
 
 ## Global Fixes and Criticisms
 [List EVERY issue, bug, or deficiency found. Order by severity: Critical/Major -> Important/Moderate -> Minor/Trivial. Structure each finding with:]
