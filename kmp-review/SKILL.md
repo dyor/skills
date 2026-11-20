@@ -1,7 +1,7 @@
 ---
 name: kmp-review
 description: Pre-release review for Kotlin Multiplatform (Compose Multiplatform + Android + iOS) apps. Say "/kmp-review for release" to run everything - R8/minified-build verification, secrets and API-key scan (tracked files and git history), unfinished-code scan (stubs, TODOs, empty actuals, dead buttons, dev URLs), iOS release hygiene (privacy manifest, ATS, permissions), skill discovery (local dyor skills plus android/skills), Android docs lookup through the android CLI, and a KMP-aware code review (commonMain purity, expect/actual, Kotlin/Native threading, cinterop). Ends with a ship / ship-after-fixes / block verdict.
-version: 1.0.0
+version: 1.1.0
 ---
 
 # KMP Review (`kmp-review`)
@@ -126,7 +126,8 @@ manifest, App Review Guidelines. Prefer the official page over blog posts.
 
 ## Step 4: Code review of the release diff
 Apply the full `android-review` methodology (Phase 1-4 there: boundary analysis,
-systematic audit, standard findings and fix-ticket format). Do not skip it: whole-file
+systematic audit, standard findings and fix-ticket format; for a Google Play release also its
+Phase 2.5 live Vitals check and constrained-emulator screenshot pass). Do not skip it: whole-file
 reads, thread/ownership tracing, no artificial cap on findings. Add this KMP-specific pass:
 
 1. **commonMain purity.** No `android.*`, `java.*`, `platform.*` imports; no `Dispatchers.IO`
