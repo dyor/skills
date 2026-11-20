@@ -1,7 +1,7 @@
 ---
 name: dyor-knowledge-base
 description: A summary of all names and descriptions of skills in the dyor/skills repository, used to guide importing relevant skills.
-version: 1.6.0
+version: 1.7.0
 ---
 
 # Skill: dyor-knowledge-base
@@ -20,6 +20,10 @@ This skill acts as a repository of knowledge about available skills in the `dyor
 - **`android-review`**
   - **Description**: Conducts an exhaustive, rigorous Android and Kotlin Multiplatform (KMP) code review following Android Studio principal code review standards.
   - **URL**: `https://github.com/dyor/skills/tree/main/android-review`
+
+- **`kmp-review`**
+  - **Description**: Pre-release review for KMP apps. Say "/kmp-review for release": scans for R8 and a minified build that actually runs, committed API keys and secrets (including git history), unfinished code (stubs, TODOs, empty actuals, dev URLs), iOS release hygiene, discovers which skills to invoke, checks Android docs via the android CLI, runs a KMP-aware code review, and ends with a ship / ship-after-fixes / block verdict.
+  - **URL**: `https://github.com/dyor/skills/tree/main/kmp-review`
 
 - **`agentic-test-driven-development`**
   - **Description**: A visual test-driven development loop for Compose apps using Compose HotSwan for Android device testing. Navigates the live app, edits code, hot-reloads, and produces a markdown report that embeds before/after screenshots.

@@ -1,6 +1,7 @@
 ---
 name: android-review
-description: Conducts an exhaustive, rigorous Android and Kotlin Multiplatform (KMP) code review following Android Studio principal code review standards. Dynamically checks installed domain skills, discovers missing skills from android/skills and firebase/agent-skills, cross-references official Android documentation via search_android_docs, and audits main thread safety, lifecycle leaks, coroutines, platform interop, and actionable fix generation.
+description: Conducts an exhaustive, rigorous Android code review following Android Studio principal code review standards, and doubles as an Android pre-release gate ("/android-review for release"). Dynamically checks installed domain skills, discovers missing skills from android/skills and firebase/agent-skills, cross-references official Android documentation via the android CLI (`android docs`), audits main thread safety, lifecycle leaks, coroutines, platform interop, and actionable fix generation, and for releases verifies R8 on a minified build that actually runs, scans for committed API keys/secrets, and flags unfinished code. For Kotlin Multiplatform apps use kmp-review instead.
+version: 1.1.0
 ---
 
 # Android Change Review
@@ -159,6 +160,71 @@ For downstream tooling, AI subagents, or human executors, format each fix as a s
 #### 5. Test Alignment
 - Exact unit test, instrumented test, or compiler task to run and verify the fix.
 ```
+
+---
+
+## Phase 5: Release Gate (run when the user says "for release", "ready to ship", or similar)
+
+A review of the diff is not a release check. For a release, also do all of this, then end
+with a verdict (SHIP / SHIP AFTER FIXES / BLOCK). KMP apps: use `kmp-review`, which
+includes this gate plus commonMain/iOS checks.
+
+### 5.1 Mechanical scan
+```bash
+~/.claude/skills/android-review/scripts/release_scan.sh <appDir> [androidModule] [baseRef]
+```
+Exit 1 = at least one FAIL. Covers R8 settings, secrets/API keys (tracked files and git
+history), unfinished code (stubs, TODOs, placeholders, dev URLs, empty handlers, ignored
+tests), manifest hygiene and pre-release dependencies. Triage each WARN/FAIL by opening the
+file; the script is a pattern match (public Firebase client keys are normal, a server key
+in `.env` is not). With a built AAB, also run
+`~/.claude/skills/play-prepublish-check/scripts/prepublish_check.sh <appDir> [module] [aab]`.
+
+### 5.2 R8: enabled AND exercised
+- Release build has `isMinifyEnabled = true`, `isShrinkResources = true`, and
+  `proguard-android-optimize.txt` plus the app's `proguard-rules.pro`; no blanket
+  `-keep class **` or `-dontwarn **`.
+- Build `bundleRelease`; confirm `mapping.txt`; read `missing_rules.txt` if present.
+- Install the minified build and exercise sign-in, purchases, every JSON decode path
+  (kotlinx.serialization/Gson/Moshi), DI-injected screens (Koin/Hilt), Firebase reads,
+  camera/media, deep links and any reflection. `adb logcat -b crash` stays empty.
+- Use the `r8-analyzer` skill if installed (`android skills find r8`); otherwise note it
+  as a discoverable skill. Compare size with the previous release.
+
+### 5.3 Skills to invoke
+Beyond Phase 0: list which installed/discoverable skills apply to the release
+(`android skills list`, `android skills find <keyword>`), plus local dyor skills:
+`google-play-publishing` and `play-prepublish-check` for Play, `adapty-store-payments` for
+purchases, `febak-site-pages` for privacy/terms pages. Give exact install commands for
+missing ones.
+
+### 5.4 Docs via the android CLI
+```bash
+android docs search "<keywords>"      # then
+android docs fetch kb://<id>
+```
+One search per distinct API/policy in the diff (target SDK requirements, foreground
+service types, permission changes, deprecated APIs). If `android` is not installed, follow
+the `android-cli` skill. Cite what you found in "Authoritative Documentation Consulted".
+
+### 5.5 Secrets and API keys
+Beyond the script: grep the diff for new keys, confirm `local.properties`, keystores and
+`.env` files are ignored and were never in history (`git log --all -- <path>`), check
+`BuildConfig` fields do not embed server secrets (they ship in the APK), and confirm
+public client keys (Maps, Firebase) are restricted by package + SHA-1 in Cloud Console.
+A secret that was ever committed must be rotated; deleting it from HEAD is not enough.
+
+### 5.6 Anything not fully implemented
+Every `TODO()`, `NotImplementedError`, "coming soon", empty `onClick`, disabled-but-visible
+control, `@Ignore`d test and hard-coded/mock data path in production sources is either
+finished, hidden from users, or consciously shipped (say which and why). Dead ends a user
+can reach are MAJOR findings.
+
+### 5.7 Verdict
+Write `SPECS/android-review-<date>.md`: scan table with triage, R8 run result, skills,
+docs, findings (Phase 3/4 format), "Not verified" (what you could not run), release facts
+(versionCode above Play, release notes, backend deploys). Any open FAIL, MAJOR finding or
+unrun minified build = BLOCK. Never print a full secret; show file, line, first 4 chars.
 
 ---
 

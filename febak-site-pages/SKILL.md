@@ -22,7 +22,7 @@ Always read the site file's notes and its extra checks before a change.
 
 ## 1. What Febak is
 - Febak hosts product sites (`kind: product`) and blogs. Pages are Markdown/MDX stored in Febak's database and served at `https://<host>/<slug>`. They are not in any git repo, and Febak keeps no history.
-- Tools: `mcp__febak__list_sites`, `list_pages`, `get_page`, `create_page`, `update_page`, `delete_page`, `update_site`, `set_home_page`. If they are deferred, load them with ToolSearch (`select:mcp__febak__...`) before the first call.
+- Tools: `mcp__febak__list_sites`, `list_pages`, `get_page`, `create_page`, `update_page`, `delete_page`, `update_site`, `set_home_page`, `image_hosting`. If they are deferred, load them with ToolSearch (`select:mcp__febak__...`) before the first call.
 - Look the site ID up with `list_sites` at the start of a session rather than storing it.
 
 ## 2. Rules
@@ -34,7 +34,7 @@ Always read the site file's notes and its extra checks before a change.
 6. **Leave product config alone** (`update_site`, `set_home_page`) unless asked. Store URLs live in `product`.
 7. **Effective date.** Legal pages open with `*Effective <date>.*`. Update it when the content changes, and say what changed in the Changes section. A draft says `*Draft of <date>. Effective when published.*`.
 8. **Archive every published version.** Because Febak keeps no history, the repo does. Before a published legal page is overwritten, copy its current text to `<source folder>/archive/<name>-<effective-date>.md` (for example `privacy-policy-2026-10-12.md`), using the date the old text took effect. If the live text is already in git, `git show HEAD:<path>` gives it. Never overwrite an archive file. Unpublished drafts need no archive, but the repo copy of the draft is the source.
-9. **Images** for a product site are not uploaded through the MCP: they are hosted elsewhere (the site file says where) and listed through `update_site`.
+9. **Images** are static files in the Febak git repo, not uploads. Call `mcp__febak__image_hosting` (site + file names) for the folder, URLs and steps: put the file in `public/_static/<site>/` in the Febak repo (github.com/dyor/febak; usually `~/DyorProjects/web/Febak/febak_com`), commit only those files, **ask the user before pushing `main`** (it deploys the whole app, with no downtime), wait until the live URL returns 200, and only then reference it: `/_static/<site>/<file>` in page Markdown, `https://febak.com/_static/<site>/<file>` as the page `image`, `/_static/...` paths in product config. Keep images JPEG, about 1600px or less and under about 500 KB, because git history keeps every version.
 
 ## 3. Legal-page change checklist
 1. Edit the Markdown source (privacy policy, and terms if affected).
