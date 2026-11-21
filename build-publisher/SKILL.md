@@ -1,7 +1,7 @@
 ---
 name: build-publisher
-description: Build "Publisher", a macOS app for shipping mobile builds to Google Play and the App Store/TestFlight without a terminal - pre-flight checks, one-click Build & Upload to the internal track with a safe version code, promote internal to closed testing to production, store-listing diff and upload (text, icon, screenshots), iOS TestFlight upload and App Review submission, release notes, a publish lock, store-watch notifications (live, approved, rejected, new release live), release flows (cut a release from the commits since the last one, one build number on both stores, then follow it through testing and review to live on each store, checked hourly), and a release gate (backend deployed and tests passed required; committed and pushed advised, uncommitted files set aside during the build). Plain Swift package with fastlane/Ruby/shell scripts bundled in this skill. Use when the user says "build Publisher", "set up one-click Play/TestFlight publishing", or asks for /dyor-knowledge-base publisher. Built as PublisherKit + a thin app, so Appos (build-appos) can show it inside its window. Mac only. Companion skills - build-operator, build-runner, build-appos, play-prepublish-check, google-play-publishing.
-version: 1.5.0
+description: Build "Publisher", a macOS app for shipping mobile builds to Google Play and the App Store/TestFlight without a terminal - pre-flight checks, one-click Build & Upload to the internal track with a safe version code, promote internal to closed testing to production, store-listing diff and upload (text, icon, screenshots), iOS TestFlight upload and App Review submission, release notes, a publish lock, store-watch notifications (live, approved, rejected, new release live), release flows (cut a release from the commits since the last one, one build number on both stores, then follow it through testing and review to live on each store, checked hourly, every step dated, releases grouped by MAJOR.MINOR with their attempts and retries, and a release history of how long each took), and a release gate (backend deployed and tests passed required; committed and pushed advised, uncommitted files set aside during the build). Plain Swift package with fastlane/Ruby/shell scripts bundled in this skill. Use when the user says "build Publisher", "set up one-click Play/TestFlight publishing", or asks for /dyor-knowledge-base publisher. Built as PublisherKit + a thin app, so Appos (build-appos) can show it inside its window. Mac only. Companion skills - build-operator, build-runner, build-appos, play-prepublish-check, google-play-publishing.
+version: 1.6.0
 ---
 
 # Build Publisher
@@ -415,6 +415,36 @@ for review Nov 20 ~10 pm CT, live Nov 21 12:58 am CT; iOS in TestFlight. The rel
 10:04 pm CT and was live on Play 27 hours later after 2 attempts. Next is `1.3 (8)`; if iOS
 `1.2 (7)` fails, its retry is `1.2.8 (8)`.
 
+**In Publisher.** `ReleaseNaming` (ReleaseEvents.swift) parses versions and names the next one.
+- **Next release** = the next MINOR after the highest MAJOR.MINOR any record or store has seen
+  (release flows, releases.json, App Store Connect versions and builds, Play track release
+  names; *not* the source's versionName, which may already be bumped), with `nextBuild` = one past
+  every build any store, upload record or attempt has. The card shows the rule it applied
+  ("new functionality → 1.3"); with nothing recorded, "first release → <source version>".
+- **New major version** is a per-app toggle in the Next release card's ⋯ menu (persisted, cleared
+  by the next cut): "new major version → 2.0". Never automatic.
+- **Retry** (release card button when an attempt failed, ⋯ menu always, the store hero's
+  rejected state, and a link under Next release: "retry of 1.2 → 1.2.8") opens a sheet: the name
+  `MAJOR.MINOR.<nextBuild>`, a toggle per store (default: stores where the release's newest attempt
+  failed or was rejected; with none, the stores it isn't live on), and a reason. It runs
+  `Runner.publishRelease(p, notes:, build:, version:, stores:)` (only the chosen stores'
+  scripts, `PUBLISHER_VERSION` + `PUBLISHER_MIN_BUILD`), and on success creates the attempt
+  (`stores` = the chosen ones) and marks the previous attempt `superseded` on those stores with
+  the reason. The release keeps its first cut, so its duration includes the retry; the build is
+  used up on both stores (nextBuild counts every attempt).
+- **Before any upload** (publish to both, retry, TestFlight upload) Publisher checks the last App
+  Store Connect read: if that exact version string is approved or later
+  (`PENDING_*_RELEASE`, `PROCESSING_FOR_APP_STORE`, `READY_FOR_SALE`, `READY_FOR_DISTRIBUTION`,
+  `REPLACED_WITH_NEW_VERSION`, removed from sale), it refuses with an alert offering **Retry…**
+  instead of letting Apple reject it after the archive (ITMS-90186 / 90062). Play needs only a
+  higher versionCode, which nextBuild guarantees.
+- Publish to both passes the next release's name as `PUBLISHER_VERSION`, so the source's
+  versionName / MARKETING_VERSION are set by the run (and committed with the release files).
+- A failed run that still reached a store (an `ITMS-` line in the log, or the App Store upload
+  done and Play failing) records the attempt with an `uploadFailed` event, so it can be retried.
+- Upload records parse `uploaded 1.2.8 (8) to TestFlight` (and the older `uploaded build 8 …`)
+  and store the run's version name.
+
 **In the scripts.** Both upload scripts keep choosing the build number (`PUBLISHER_MIN_BUILD` is
 the floor Publisher passes so both stores match). `PUBLISHER_VERSION=1.2.7` sets `versionName` /
 `MARKETING_VERSION` for the run (Android commits it with the release files; iOS also rewrites
@@ -506,12 +536,67 @@ flows existed, or from another Mac, appear too. A release completes when both st
 replaced; notify "🎉 <app> 1.1 (9) is out" then. Keep the last snapshot of each store while a
 refresh runs, or every card blanks out mid-refresh.
 
-**Release card** (Shared tab, active ones on top, the last three shipped below): label, a status
-pill ("Testing · promote when good", "Awaiting review on both stores", "Shipped", "Rejected"),
-notes, commit, an Archive menu; the shared steps (Ready → Published); then one row per store
-with three steps (Internal testing → Production review → Live on Google Play; TestFlight → App
-Review → Live on the App Store), the current one coloured with its short state ("Test on your
-iPhone", "Promoted · awaiting review"). **Clicking a row opens that store's Overview.**
+**Attempts, events and releases.** Each record in `release_flows.json` is one **attempt** (a
+build). New optional fields, so old files still decode: `events` (array), `stores` (`["play",
+"ios"]`, nil = every store the app has; a retry may go to one) and `historical` (backfilled,
+never tracked live). `version` became `var`. A **release** is computed, never stored: the
+attempts grouped by `ReleaseNaming.releaseKey(version)` (`1.2`, `1.2.7`, `1.2.8` → `1.2`).
+
+Event: `{kind, store?, at, seenBy?, approx?, outcome?, reason?, source?}`, `kind` kept as a string
+so a newer Publisher's kinds never break an older one's decode. Kinds: `cut`,
+`uploadedInternal`, `uploadedTestFlight`, `testflightProcessed`, `sentForReview`,
+`reviewOutcome` (`outcome` approved/rejected, `reason` = Play policy issue title, App Store state
+or ITMS code), `uploadFailed`, `live`, `superseded` (per store, with a reason), `abandoned`.
+Adding one: exact beats `seenBy` beats `approx`, and for equal quality the earlier time wins; a
+`cut` always keeps the earliest time. Publisher's own actions are exact (cut at the moment
+Publish/Retry started, uploads from releases.json, promotions/submissions, retry's
+superseded). The hourly watch (any store sync) records what each store's stage implies as
+`seenBy` now, but capped at the time of a later step already known (live at 12:58 means the
+upload happened *by* 12:58, not by now); Play never gets an implied "approved" (live is its
+answer). Review time = sentForReview → outcome (else live), and is unknown when both were seen
+in the same check.
+
+**Migration.** On load, records without `events` get them from the old fields (`created` →
+cut seen-by, `playPromoted`/`iosPromoted` → sentForReview exact, `playLive`/`iosLive` → live
+seen-by, `archived` → abandoned) and a backwards version ("3 (1.1)") is repaired. The file is
+copied once to `release_flows.v1.json` before the first rewrite. Keep writing the old fields too.
+
+**Backfill** (`ReleaseBackfill`). Every sync: App Store Connect build `uploadedDate` → exact
+uploadedTestFlight (builds at or below the live one become historical attempts); a version's
+`createdDate` → approximate sentForReview (only if not older than the build's upload); Apple's
+public lookup day → approximate live for the current / first version; an attempt with no cut gets
+an approximate one at its first upload. Once per launch, after both stores have answered:
+releases.json (exact uploads, creating historical attempts), git release commits (`Prepare … 1.2
+(6)`, `chore(release): … 1.1 (9)` → exact cut; `versionCode N to internal` → approximate
+upload), activity.json (submit / promote → production, exact), the commit each attempt came from,
+and for each replaced attempt an approximate `superseded` ("Replaced by 1.2 (7): <next
+attempt's commit subject>") plus an `uploadFailed` with the ITMS code named by a fix commit
+between the two attempts when the iOS build never reached App Store Connect.
+
+**Release card** (Shared tab, active releases on top, the last three shipped below with "All
+releases & how long they took"): the MAJOR.MINOR, "2 attempts · 1.2 (6), 1.2 (7)", a status pill
+("Testing · promote when good", "Awaiting review…", "Failed · retry", "Shipped", "Abandoned"), cut
+time and commit, a **Retry…** button when something failed, and a ⋯ menu (Retry…, Mark <attempt>
+rejected on <store>… with a reason, since Play never reports rejections, and Archive). Then the
+shared steps (Ready → Published) and one row per store for the attempt that store is on, three
+steps each (Internal testing → Production review → Live on Google Play; TestFlight → App Review →
+Live on the App Store). **Every step shows when it happened under its label**
+("Nov 21, 12:58 am"; "by Nov 21, 12:58 am" when seen by the watch; "≈ …" approximate, dimmed),
+the review step adds "approved/rejected <time>", and hovering shows the full timestamp and its
+source. Below: cut → live on Google Play, on the App Store, on both, and review time per store
+("27 h", "≈ 8 h", "30 h so far" while active), then every attempt with its cut time and why it
+failed or was superseded. **Clicking a store row opens that store's Overview.**
+
+### Release history
+
+A **Releases** tab per app (between Store and Activity), and **All releases** at the top of the
+standalone sidebar for every app (Appos: its Tools row, via `PublisherEmbed.allReleasesView`).
+Both are `ReleaseHistoryView(app:model:)`: a Swift Charts line of hours from cut to live per
+release (x = cut date, one series per store, or per app · store across apps, each point labelled
+with the version) with a one-line trend ("App Store: latest 20 h vs earlier avg 25 d 16 h
+(faster)"), and a table, newest first: [App], release, cut, attempts (builds, and each failed
+attempt's reason), → live Play, → live App Store, → live both, Play review, App review. `≈`
+marks numbers resting on an approximate time.
 
 **Release hero** (top of each store's Overview, for the oldest release still moving there):
 "Test 1.1 (9) on your Android phone / iPhone" with numbered steps, the tester link or
@@ -530,6 +615,9 @@ release get a full read of Play and App Store Connect; the rest get the public-p
   red items are explained and match reality.
 - `Store` tab shows unchanged/changed rows against their local metadata.
 - `Shared` tab: the commit count matches `git log <last release>..HEAD`, and the Committed row matches `git status`.
+- `Shared` tab: each active release shows its attempts, a date under every finished step and
+  "cut → live" times; Next release names the rule it used ("new functionality → 1.3").
+  `Releases` tab lists past releases with a chart; `release_flows.v1.json` holds the old file.
 - **Nothing was published during setup.** Say so explicitly and list what you ran (snapshots
   only, `DRY_RUN=1` iOS export if requested).
 

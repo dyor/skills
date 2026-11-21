@@ -1,7 +1,7 @@
 ---
 name: build-appos
 description: Build "Appos", a macOS home for Operator, Runner, Publisher and Tiny Projects in one window. Operator's project list (with an icon per project) sits on the left; the right side shows Operator's page for the selected project, and Run / Publish open Runner or Publisher for that project in place, closing back to Operator with Esc. Each tool stays a standalone app too, because each is split into a Kit library plus a thin app, and Appos links the Kits from the sibling checkouts. Plain Swift package, no Xcode project. Use when the user says "build Appos", "put Operator, Runner and Publisher in one app", "one dock app for my tools", or asks for /dyor-knowledge-base appos. Mac only. Requires build-operator; build-runner, build-publisher and build-tiny-projects are optional.
-version: 1.1.0
+version: 1.2.0
 ---
 
 # Build Appos
@@ -111,7 +111,7 @@ change, including each log line, so keep the root view observing only Appos's ow
 ### Right side: one pane at a time
 
 ```swift
-enum Pane { case project, runner, publisher, tinyProjects }
+enum Pane { case project, runner, publisher, tinyProjects, releases }
 ```
 
 - `.project`: `OperatorProjectPage(project:model:onRun:onPublish:tasks:)`, with
@@ -122,6 +122,11 @@ enum Pane { case project, runner, publisher, tinyProjects }
 - `.runner`, `.publisher`: a 52 pt **EmbedBar**, then `embed.view`. The bar shows
   **‹ Operator** (button), the project's icon and name, `›`, the tool name in amber, "esc to
   close" and a ✕ on the right.
+- `.releases`: the same bar with no project ("Releases", Publisher's gem), then
+  `publisher.allReleasesView`: Publisher's release history across every app (table and
+  time-to-live chart, see `build-publisher` → Release history). Opened from a second Tools row,
+  **Releases** ("How long every app's releases take"), which is highlighted while it shows.
+  `APPOS_PANE=releases` opens it for a snapshot.
 - `.tinyProjects`: the same bar, then `tinyProjects.view`. From the Tools row
   (`tinyProjectsFor == nil`) the bar has no project, and the page shows every list. From a
   project's Tasks card, the bar names the project and `tinyProjects.show(projectNamed:)`
@@ -135,22 +140,24 @@ list in Tiny Projects.
 
 ### Release card (Publisher's Shared tab, inside Appos)
 
-Releases are named by the convention in `build-publisher` → **Release naming**
-(`MAJOR.MINOR (BUILD)` first attempt, `MAJOR.MINOR.BUILD (BUILD)` retry). Build the release card
-around it so a fresh Appos shows it:
+All of this lives in PublisherKit (`build-publisher` → **Release naming**, **Release flows**,
+**Release history**), so standalone Publisher and Appos show the same thing. In short:
 
-- **Dates per step**: each step (cut, internal/TestFlight, sent for review, approved/rejected,
-  live) shows the date and time it happened, per store, read from the stores.
-- **Attempts**: the release lists every attempt (`1.2 (6)`, `1.2.7 (7)`, …), each with its stores,
-  outcome and failure reason (rejection, ITMS error, failed test pass).
-- **Durations**: release duration (first attempt's cut → live on each store, and on both), and
-  review time per store per attempt (sent → approved/rejected). Retries count toward the same
-  release.
-- **Retry action**: on a failed attempt, a **Retry** button that builds the next attempt as
-  `MAJOR.MINOR.<next build> (<next build>)` (via `PUBLISHER_VERSION`) and sends it **only to the
-  store(s) that failed**; the other store keeps its approved attempt.
-- **History view**: past releases listed newest first with version, attempts, cut date, live
-  dates and durations, so release speed can be compared over time.
+- A **release** is a MAJOR.MINOR (`1.2`); its **attempts** are the builds of it (`1.2 (6)`,
+  `1.2.7 (7)`). One card per release, with "2 attempts · 1.2 (6), 1.2 (7)".
+- **Dates per step**: Ready, Published, then per store Internal testing / Production review /
+  Live on Google Play and TestFlight / App Review / Live on the App Store each show when it
+  happened under the label ("Nov 21, 12:58 am"; "by …" when first seen by the hourly check;
+  "≈ …" when backfilled and approximate); hover shows the full timestamp and source.
+- **Durations**: cut → live on Google Play, on the App Store, on both, and review time per
+  store ("27 h"; "30 h so far" while running). The cut is the release's first attempt's.
+- **Attempts** listed with each failed one's reason (rejection, ITMS code, superseded reason).
+- **Retry…** (button when an attempt failed, always in the card's ⋯ menu): a sheet that cuts
+  `MAJOR.MINOR.<next build> (<next build>)`, lets you pick the store(s) (default: where the last
+  attempt failed) and type why the previous attempt is superseded.
+- **Next release** shows the rule it applied ("new functionality → 1.3"), a link to retry the
+  active release instead ("retry of 1.2 → 1.2.8"), and a ⋯ menu with **New major version**.
+- **Releases** tab per app, and the Tools row above for every app.
 
 Navigation rules (these are the product, so keep them):
 

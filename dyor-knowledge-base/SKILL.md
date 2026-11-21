@@ -1,7 +1,7 @@
 ---
 name: dyor-knowledge-base
 description: A summary of all names and descriptions of skills in the dyor/skills repository, used to guide importing relevant skills.
-version: 1.8.0
+version: 1.8.1
 ---
 
 # Skill: dyor-knowledge-base
@@ -46,7 +46,7 @@ This skill acts as a repository of knowledge about available skills in the `dyor
   - **URL**: `https://github.com/dyor/skills/tree/main/build-operator`
 
 - **`build-publisher`** (Mac only)
-  - **Description**: Builds "Publisher", a macOS app for shipping to Google Play and the App Store/TestFlight without a terminal: pre-flight checks, safe version codes, one-click Build & Upload to internal, promote to closed/production, store-listing diff and upload, TestFlight and App Review, publish lock, a ready-to-publish gate, and the release-naming convention (`1.2 (6)` first attempt, `1.2.7 (7)` retry; `PUBLISHER_VERSION`, refuses already-approved iOS versions). Bundles the tested fastlane/Ruby/shell scripts. Say `/dyor-knowledge-base publisher`.
+  - **Description**: Builds "Publisher", a macOS app for shipping to Google Play and the App Store/TestFlight without a terminal: pre-flight checks, safe version codes, one-click Build & Upload to internal, promote to closed/production, store-listing diff and upload, TestFlight and App Review, publish lock, a ready-to-publish gate, and the release-naming convention (`1.2 (6)` first attempt, `1.2.7 (7)` retry; `PUBLISHER_VERSION`, refuses already-approved iOS versions and offers Retry), every release step dated, releases grouped with their attempts, and a Releases history of how long each took. Bundles the tested fastlane/Ruby/shell scripts. Say `/dyor-knowledge-base publisher`.
   - **URL**: `https://github.com/dyor/skills/tree/main/build-publisher`
 
 - **`build-runner`** (Mac only)
