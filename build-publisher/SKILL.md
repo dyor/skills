@@ -1,7 +1,7 @@
 ---
 name: build-publisher
 description: Build "Publisher", a macOS app for shipping mobile builds to Google Play and the App Store/TestFlight without a terminal - pre-flight checks, one-click Build & Upload to the internal track with a safe version code, promote internal to closed testing to production, store-listing diff and upload (text, icon, screenshots), iOS TestFlight upload and App Review submission, release notes, a publish lock, store-watch notifications (live, approved, rejected, new release live), release flows (cut a release from the commits since the last one, one build number on both stores, then follow it through testing and review to live on each store, checked hourly), and a release gate (backend deployed and tests passed required; committed and pushed advised, uncommitted files set aside during the build). Plain Swift package with fastlane/Ruby/shell scripts bundled in this skill. Use when the user says "build Publisher", "set up one-click Play/TestFlight publishing", or asks for /dyor-knowledge-base publisher. Built as PublisherKit + a thin app, so Appos (build-appos) can show it inside its window. Mac only. Companion skills - build-operator, build-runner, build-appos, play-prepublish-check, google-play-publishing.
-version: 1.4.0
+version: 1.5.0
 ---
 
 # Build Publisher
@@ -216,7 +216,7 @@ log** (`~/Library/Application Support/Publisher/activity.json`: date, app, title
      highest code it has (via an edit that is deleted afterwards); if source is not higher,
      bump past Play's highest and **write it back into `build.gradle.kts`**. If the Play query
      fails, say so loudly and fall back to source (worst case Play rejects, never overwrites).
-     `versionName` is never touched.
+     `versionName` is only touched when `PUBLISHER_VERSION` is set (see Release naming).
    - Release notes: written to `<metadata>/en-US/changelogs/<versionCode>.txt` (what `supply`
      reads). Empty box keeps an existing file; if none, write "Bug fixes and improvements."
      Play rejects notes over **500 UTF-16 units** (an emoji is 2); the script trims whole lines.
@@ -375,9 +375,60 @@ Follow recipe §9. For Publisher specifically:
 - **The menu-bar item isn't part of Appos.** It lives in the AppDelegate, which Appos doesn't
   use. Standalone Publisher keeps it.
 
+## Release naming
+
+One convention for every app Publisher ships (source: `SPECS/release-naming.md` in the Buen Día
+repo, agreed 2026-11-21). Appos shows it on the release card (see `build-appos`).
+
+```
+MAJOR.MINOR (BUILD)          first attempt at a release, e.g. 1.2 (6)
+MAJOR.MINOR.BUILD (BUILD)    any retry of that release,  e.g. 1.2.7 (7)
+```
+
+- **MAJOR.MINOR names a release** (one set of functionality going to users). **BUILD names an
+  attempt**: `versionCode` on Android, `CURRENT_PROJECT_VERSION` on iOS. For one attempt it is the
+  same on both stores, it is never reused, and it always increases across the app's whole history.
+  The version string (`versionName` / `MARKETING_VERSION`) is also the same on both stores for
+  an attempt.
+- **New functionality bumps MINOR** (roughly weekly): `1.2 (6)` → `1.3 (8)`. No third part on a
+  first attempt. **MAJOR changes only when the user asks** (`1.9 (17)` → `2.0 (18)`, MINOR to 0).
+- **Any retry is `MAJOR.MINOR.BUILD (BUILD)`**: `1.2 (6)` → `1.2.7 (7)` → `1.2.8 (8)`. Failures
+  include a store rejection, a failed TestFlight or internal pass, an upload or validation error
+  (e.g. ITMS-90208) and a blocking review finding.
+- **Why the retry format.** Apple closes a version once it approves it: a new upload with the same
+  `CFBundleShortVersionString` is refused (ITMS-90186 / ITMS-90062). `1.2.7` is higher than `1.2`,
+  so it is always accepted, and Play only needs a higher `versionCode`, which the build already is.
+  So a retry never needs a check of what either store has approved.
+- **A retry goes only where the last attempt failed.** If 1.2 (6) is approved on Play and rejected
+  on iOS, send 1.2.7 (7) to iOS only; Play keeps 1.2 (6). The build number is used up on both.
+- A fix to something already live is just the next release (`1.3`); if it truly can't wait and
+  adds nothing, it is a retry of the live release (`1.2.9 (9)`). Never skip ahead to make numbers
+  match: the next attempt uses the number above the highest build either store has seen.
+- **What we measure.** Release duration = the first attempt's cut → live on each store (and on
+  both); retries count toward the same release. Also attempts per release (with each failure
+  reason) and review time per store per attempt (sent → approved/rejected).
+
+**Example, Buen Día 1.2.** Attempt 1, `1.2 (6)`: Play internal fine but superseded before
+production review (portrait warning, RECORD_AUDIO prompt at launch); Apple rejected the binary
+(ITMS-90208). Attempt 2 shipped as `1.2 (7)` but under this convention is `1.2.7 (7)`: Play sent
+for review Nov 20 ~10 pm CT, live Nov 21 12:58 am CT; iOS in TestFlight. The release was cut Nov 19
+10:04 pm CT and was live on Play 27 hours later after 2 attempts. Next is `1.3 (8)`; if iOS
+`1.2 (7)` fails, its retry is `1.2.8 (8)`.
+
+**In the scripts.** Both upload scripts keep choosing the build number (`PUBLISHER_MIN_BUILD` is
+the floor Publisher passes so both stores match). `PUBLISHER_VERSION=1.2.7` sets `versionName` /
+`MARKETING_VERSION` for the run (Android commits it with the release files; iOS also rewrites
+`project.yml` for XcodeGen projects). A three-part version must end in the build number, or the
+script stops. `ios_upload.sh` also asks App Store Connect and **refuses a version it has already
+approved** before archiving, telling you to retry as `MAJOR.MINOR.<build>`. Publisher passes
+`PUBLISHER_VERSION` itself: the release's `MAJOR.MINOR` for a first attempt (or the source's
+current version), `MAJOR.MINOR.<build>` for a retry, and for a retry only the store(s) that
+failed get a build. Both scripts run with `LANG=en_US.UTF-8` (iOS exports it): Ruby otherwise
+reads the App Store Connect JSON as US-ASCII and fails on names like "Buen Día".
+
 ## 4. Version names and what Publisher never does
 
-- Never edits `versionName`. Never uploads without being asked. Never sends anything for
+- Never edits `versionName` except to apply the release naming above (`PUBLISHER_VERSION`). Never uploads without being asked. Never sends anything for
   review without a confirmation. Never commits, except the two release files after a
   successful upload. Never deletes a track, release or listing.
 - Every Play action passes `changes_not_sent_for_review:true` by default, so uploads land in
@@ -387,7 +438,7 @@ Follow recipe §9. For Publisher specifically:
 ## 5. Releases: from commits to live on both stores
 
 A **release** is the set of commits since the last release, built once with one version and
-build number on both stores ("1.1 (9)"), then worked through testing and review until it is
+build number on both stores ("1.1 (9)"; retries are named `1.1.10 (10)`, see Release naming), then worked through testing and review until it is
 live on Google Play and the App Store. Several can be in flight at once (one in review, the
 next being tested). The **Shared** tab is where releases live.
 

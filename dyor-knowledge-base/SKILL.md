@@ -1,7 +1,7 @@
 ---
 name: dyor-knowledge-base
 description: A summary of all names and descriptions of skills in the dyor/skills repository, used to guide importing relevant skills.
-version: 1.7.0
+version: 1.8.0
 ---
 
 # Skill: dyor-knowledge-base
@@ -18,11 +18,11 @@ This skill acts as a repository of knowledge about available skills in the `dyor
   - **URL**: `https://github.com/dyor/skills/tree/main/adapty-store-payments`
 
 - **`android-review`**
-  - **Description**: Conducts an exhaustive, rigorous Android and Kotlin Multiplatform (KMP) code review following Android Studio principal code review standards.
+  - **Description**: Conducts an exhaustive, rigorous Android and Kotlin Multiplatform (KMP) code review following Android Studio principal code review standards; its release gate also checks release-naming and build numbers.
   - **URL**: `https://github.com/dyor/skills/tree/main/android-review`
 
 - **`kmp-review`**
-  - **Description**: Pre-release review for KMP apps. Say "/kmp-review for release": scans for R8 and a minified build that actually runs, committed API keys and secrets (including git history), unfinished code (stubs, TODOs, empty actuals, dev URLs), iOS release hygiene, discovers which skills to invoke, checks Android docs via the android CLI, runs a KMP-aware code review, and ends with a ship / ship-after-fixes / block verdict.
+  - **Description**: Pre-release review for KMP apps. Say "/kmp-review for release": scans for R8 and a minified build that actually runs, committed API keys and secrets (including git history), unfinished code (stubs, TODOs, empty actuals, dev URLs), iOS release hygiene, discovers which skills to invoke, checks Android docs via the android CLI, runs a KMP-aware code review, and checks the version follows the release-naming convention, and ends with a ship / ship-after-fixes / block verdict.
   - **URL**: `https://github.com/dyor/skills/tree/main/kmp-review`
 
 - **`agentic-test-driven-development`**
@@ -38,7 +38,7 @@ This skill acts as a repository of knowledge about available skills in the `dyor
   - **URL**: `https://github.com/dyor/skills/tree/main/bootstrap-kmp-template`
 
 - **`build-appos`** (Mac only)
-  - **Description**: Builds "Appos", one Dock app for Operator, Runner, Publisher and Tiny Projects. Operator's project list (with an icon per project) is on the left; Run / Publish open Runner or Publisher for that project on the right and close back to Operator. Each tool stays a standalone app too: each is split into a Kit library plus a thin app, and Appos links the Kits. Say "build Appos" or `/dyor-knowledge-base appos`.
+  - **Description**: Builds "Appos", one Dock app for Operator, Runner, Publisher and Tiny Projects. Operator's project list (with an icon per project) is on the left; Run / Publish open Runner or Publisher for that project on the right and close back to Operator. Includes the release card (dates per step, attempts, durations, Retry, history) following the release-naming convention. Each tool stays a standalone app too: each is split into a Kit library plus a thin app, and Appos links the Kits. Say "build Appos" or `/dyor-knowledge-base appos`.
   - **URL**: `https://github.com/dyor/skills/tree/main/build-appos`
 
 - **`build-operator`** (Mac only)
@@ -46,7 +46,7 @@ This skill acts as a repository of knowledge about available skills in the `dyor
   - **URL**: `https://github.com/dyor/skills/tree/main/build-operator`
 
 - **`build-publisher`** (Mac only)
-  - **Description**: Builds "Publisher", a macOS app for shipping to Google Play and the App Store/TestFlight without a terminal: pre-flight checks, safe version codes, one-click Build & Upload to internal, promote to closed/production, store-listing diff and upload, TestFlight and App Review, publish lock, and a ready-to-publish gate. Bundles the tested fastlane/Ruby/shell scripts. Say `/dyor-knowledge-base publisher`.
+  - **Description**: Builds "Publisher", a macOS app for shipping to Google Play and the App Store/TestFlight without a terminal: pre-flight checks, safe version codes, one-click Build & Upload to internal, promote to closed/production, store-listing diff and upload, TestFlight and App Review, publish lock, a ready-to-publish gate, and the release-naming convention (`1.2 (6)` first attempt, `1.2.7 (7)` retry; `PUBLISHER_VERSION`, refuses already-approved iOS versions). Bundles the tested fastlane/Ruby/shell scripts. Say `/dyor-knowledge-base publisher`.
   - **URL**: `https://github.com/dyor/skills/tree/main/build-publisher`
 
 - **`build-runner`** (Mac only)
@@ -74,7 +74,7 @@ This skill acts as a repository of knowledge about available skills in the `dyor
   - **URL**: `https://github.com/dyor/skills/tree/main/generate-code-review`
 
 - **`google-play-publishing`**
-  - **Description**: How publishing and testing on Google Play behaves (internal/closed/production tracks, tester invites, why tracks can't be deleted and old builds must be kept current in one edit, API quirks, declarations like AD_ID and health), plus a TestFlight comparison and guidance for public beta copy. Learned shipping Golf Sparks.
+  - **Description**: How publishing and testing on Google Play behaves (internal/closed/production tracks, tester invites, why tracks can't be deleted and old builds must be kept current in one edit, API quirks, declarations like AD_ID and health), plus how to retry a Play rejection (`MAJOR.MINOR.BUILD (BUILD)`) and use the rejection email's screenshot, a TestFlight comparison and guidance for public beta copy. Learned shipping Golf Sparks.
   - **URL**: `https://github.com/dyor/skills/tree/main/google-play-publishing`
 
 - **`implement-native-firebase-kmp`** (Experimental)

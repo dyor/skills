@@ -8,6 +8,12 @@
 #
 # Picks a version code that Play will accept, writes the release notes where supply
 # expects them, then builds and uploads. Safe to read and edit — the app just runs it.
+#
+# Release naming (see build-publisher "Release naming"):
+#   first attempt  MAJOR.MINOR (BUILD)         e.g. 1.2 (6)
+#   any retry      MAJOR.MINOR.BUILD (BUILD)   e.g. 1.2.7 (7)
+# PUBLISHER_VERSION=1.2.7 sets versionName for this run (and commits it with the build).
+# Unset, versionName is left alone. A three-part version must end in the build number.
 set -euo pipefail
 
 APP_DIR=$1; PKG=$2; KEY=$3; META=$4; TRACK=$5; NOTES_FILE=$6; MODULE=${7:-androidApp}
@@ -131,6 +137,23 @@ if [ "$MIN_BUILD" -gt "$NEXT" ]; then
   NEXT=$MIN_BUILD
 fi
 
+# Version name for this attempt. Accepts MAJOR.MINOR or MAJOR.MINOR.BUILD; a retry's third
+# part is the build number, which is only known now.
+if [ -n "${PUBLISHER_VERSION:-}" ]; then
+  if ! print -r -- "$PUBLISHER_VERSION" | grep -qE '^[0-9]+\.[0-9]+(\.[0-9]+)?$'; then
+    echo "PUBLISHER_VERSION '$PUBLISHER_VERSION' is not MAJOR.MINOR or MAJOR.MINOR.BUILD"; exit 1
+  fi
+  THIRD=$(print -r -- "$PUBLISHER_VERSION" | awk -F. 'NF==3 {print $3}')
+  if [ -n "$THIRD" ] && [ "$THIRD" != "$NEXT" ]; then
+    echo "Retry version $PUBLISHER_VERSION must end in the build number ($NEXT): use ${PUBLISHER_VERSION%.*}.$NEXT"; exit 1
+  fi
+  OLD_NAME=$(grep -oE 'versionName = "[^"]+"' "$GRADLE_FILE" | head -1 | cut -d'"' -f2)
+  if [ "$OLD_NAME" != "$PUBLISHER_VERSION" ]; then
+    /usr/bin/sed -i '' -E "s/versionName = \"[^\"]+\"/versionName = \"$PUBLISHER_VERSION\"/" "$GRADLE_FILE"
+    echo "versionName $OLD_NAME -> $PUBLISHER_VERSION"
+  fi
+fi
+
 # supply reads release notes from <metadata>/<lang>/changelogs/<versionCode>.txt
 CHANGELOG_DIR="$META/en-US/changelogs"
 mkdir -p "$CHANGELOG_DIR"
@@ -212,7 +235,7 @@ if git -C "$APP_DIR" rev-parse --git-dir >/dev/null 2>&1; then
   BEFORE=$(git rev-parse HEAD)
   git add -- "${RELEASE_FILES[@]}" 2>/dev/null || true
   if ! git diff --cached --quiet -- "${RELEASE_FILES[@]}" 2>/dev/null; then
-    if git commit -q -m "chore(release): versionCode $NEXT to $TRACK" -- "${RELEASE_FILES[@]}"; then
+    if git commit -q -m "chore(release): ${PUBLISHER_VERSION:+$PUBLISHER_VERSION }($NEXT) versionCode $NEXT to $TRACK" -- "${RELEASE_FILES[@]}"; then
       echo "release commit $(git rev-parse HEAD) after $BEFORE"
       git push -q || echo "WARNING: committed the release files but could not push; push when you can."
     else

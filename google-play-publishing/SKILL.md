@@ -1,7 +1,7 @@
 ---
 name: google-play-publishing
 description: How publishing and testing on Google Play actually behaves, learned the hard way shipping Golf Sparks. Use when releasing an Android app to Play (internal, closed testing, production), when a tester sees "App not available", when an upload fails a declaration check such as AD_ID, when deciding which track to publish to, or when writing public copy that offers an Android beta. Also compares TestFlight.
-version: 1.3.1
+version: 1.4.0
 ---
 
 # Google Play publishing (`google-play-publishing`)
@@ -45,6 +45,8 @@ Golf Sparks implements this in Publisher: `scripts/play_release.rb` (single edit
 - Commit with `changesNotSentForReview=true` on a draft app; an app whose changes are sent automatically answers 400 "the query parameter changesNotSentForReview must not be set". Try with the flag, retry without when Play says so.
 - Release notes are limited to **500 characters** (UTF-16 units, an emoji counts 2). Over the limit the whole upload fails.
 - `versionCode` only has to increase (Play orders by it); `versionName` is a free label and can look "backwards".
+- **Retrying a rejected release.** Name the retry `MAJOR.MINOR.BUILD (BUILD)` (e.g. `1.2 (6)` → `1.2.7 (7)`) and send it to Play only; the App Store side keeps its own version if Apple approved it (build-publisher, "Release naming"). Play needs only the higher `versionCode`, so the version string is for humans and for Apple.
+- **Rejection evidence.** The rejection email's screenshot is the best evidence of what the reviewer saw, better than the text of the violation. It is viewable from Play Console's policy emails page.
 - `edits:validate` checks an edit without committing; useful for a dry run. Delete abandoned edits.
 - Promoting a tested build to production (or App Store review from TestFlight) is its own workstream: Publisher runs no local readiness checks (uncommitted files, tests) for it.
 - An app that's already live: Play's API shows a production release as `completed` while it is still in review and can't report a rejection. The public page's "Updated on" date changing after the promotion is the signal it went live.

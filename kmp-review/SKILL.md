@@ -1,7 +1,7 @@
 ---
 name: kmp-review
 description: Pre-release review for Kotlin Multiplatform (Compose Multiplatform + Android + iOS) apps. Say "/kmp-review for release" to run everything - R8/minified-build verification, secrets and API-key scan (tracked files and git history), unfinished-code scan (stubs, TODOs, empty actuals, dead buttons, dev URLs), iOS release hygiene (privacy manifest, ATS, permissions), skill discovery (local dyor skills plus android/skills), Android docs lookup through the android CLI, and a KMP-aware code review (commonMain purity, expect/actual, Kotlin/Native threading, cinterop). Ends with a ship / ship-after-fixes / block verdict.
-version: 1.1.0
+version: 1.1.1
 ---
 
 # KMP Review (`kmp-review`)
@@ -190,6 +190,7 @@ and a 5-section fix ticket for MAJOR/MODERATE.
 Anything you could not check (no device, no AAB, no iOS archive), stated plainly.
 ## Release facts
 versionCode/Build number vs stores, release notes length, backend deploys, flags to flip
+Version follows the release-naming convention (`MAJOR.MINOR (BUILD)` first attempt, `MAJOR.MINOR.BUILD (BUILD)` retry; build-publisher "Release naming") and the build is above the highest on either store
 ```
 
 Verdict rules: any FAIL left open, any MAJOR finding, or an unrun minified build ->

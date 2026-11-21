@@ -1,7 +1,7 @@
 ---
 name: android-review
 description: Conducts an exhaustive, rigorous Android code review following Android Studio principal code review standards, and doubles as an Android pre-release gate ("/android-review for release"). Dynamically checks installed domain skills, discovers missing skills from android/skills and firebase/agent-skills, cross-references official Android documentation via the android CLI (`android docs`), audits main thread safety, lifecycle leaks, coroutines, platform interop, and actionable fix generation, and for releases verifies R8 on a minified build that actually runs, scans for committed API keys/secrets, and flags unfinished code. When a review is heading to Google Play, also checks https://google.play/business/vitals/ for current Android Vitals bad-behavior thresholds and runs a constrained Play-review emulator pass with embedded screenshots in the final report. For Kotlin Multiplatform apps use kmp-review instead.
-version: 1.3.0
+version: 1.3.1
 ---
 
 # Android Change Review
@@ -256,6 +256,12 @@ Every `TODO()`, `NotImplementedError`, "coming soon", empty `onClick`, disabled-
 control, `@Ignore`d test and hard-coded/mock data path in production sources is either
 finished, hidden from users, or consciously shipped (say which and why). Dead ends a user
 can reach are MAJOR findings.
+
+### 5.6b Version naming
+
+Confirm the version follows the release-naming convention (`MAJOR.MINOR (BUILD)` first attempt,
+`MAJOR.MINOR.BUILD (BUILD)` retry; see build-publisher "Release naming") and that the build
+number is above the highest on either store (Play and App Store Connect).
 
 ### 5.7 Verdict
 Write `SPECS/android-review-<date>.md`: scan table with triage, R8 run result, skills,

@@ -13,7 +13,18 @@
 # notes and submits for review. Picks a build number App Store Connect
 # will accept, writing it back into the Xcode project, as android_upload.sh does for
 # versionCode. DRY_RUN=1 archives and exports but does not upload.
+#
+# Release naming (see build-publisher "Release naming"):
+#   first attempt  MAJOR.MINOR (BUILD)         e.g. 1.2 (6)
+#   any retry      MAJOR.MINOR.BUILD (BUILD)   e.g. 1.2.7 (7)
+# PUBLISHER_VERSION=1.2.7 sets MARKETING_VERSION for this run. App Store Connect refuses a
+# new build for a version it has already approved, so this script stops before the archive
+# when the version is approved and says which MAJOR.MINOR.<build> to retry as.
 set -euo pipefail
+
+# Ruby reads the App Store Connect snapshot as the locale's encoding; with LANG unset it is
+# US-ASCII and a name like "Buen Día" fails to parse. Force UTF-8 for every child process.
+export LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8
 
 APP_DIR=$1; BUNDLE_ID=$2; PROJECT=$3; SCHEME=$4; KEY_ID=$5; ISSUER=$6; KEY_PATH=$7; NOTES_FILE=${8:-}; RECORD_ID=${9:-$2}
 cd "$APP_DIR"
@@ -40,7 +51,7 @@ echo "build number in source: $CURRENT"
 # Highest build number App Store Connect already has for this app, so a stale checkout
 # or another machine cannot collide ("The bundle version must be higher…").
 SNAPSHOT=$(bundle exec ruby "$SCRIPTS/appstore_snapshot.rb" "$BUNDLE_ID" "$KEY_ID" "$ISSUER" "$KEY_PATH" 2>&1 | tail -1) || true
-HIGHEST=$(print -r -- "$SNAPSHOT" | ruby -rjson -e '
+HIGHEST=$(print -r -- "$SNAPSHOT" | ruby -Eutf-8 -rjson -e '
   d = (JSON.parse(STDIN.read) rescue nil)
   abort("not JSON") unless d.is_a?(Hash)
   abort(d["error"]) if d["error"]
@@ -49,7 +60,7 @@ HIGHEST=$(print -r -- "$SNAPSHOT" | ruby -rjson -e '
 # The last build Publisher itself uploaded for this app. A failed App Store Connect
 # read once fell back to 0 here, kept the source number, and the upload was rejected
 # as a duplicate after a full archive — so a failed read now falls back to this.
-RECORDED=$(ruby -rjson -e '
+RECORDED=$(ruby -Eutf-8 -rjson -e '
   f = File.join(Dir.home, "Library/Application Support/Publisher/releases.json")
   r = (JSON.parse(File.read(f)) rescue [])
   puts r.select { |e| e["packageName"] == ARGV[0] && e["platform"] == "ios" }.map { |e| e["versionCode"].to_i }.max || 0' "$RECORD_ID")
@@ -91,6 +102,39 @@ if [ "$MIN_BUILD" -gt "$NEXT" ]; then
   [ -f "$SPEC" ] && /usr/bin/sed -i '' -E "s/(CURRENT_PROJECT_VERSION: *\"?)$NEXT(\"?)/\1$MIN_BUILD\2/" "$SPEC"
   echo "raising build number $NEXT -> $MIN_BUILD to match the release's build number"
   NEXT=$MIN_BUILD
+fi
+
+# Version string for this attempt (PUBLISHER_VERSION, else whatever the project has).
+SPEC="${PROJECT:h}/project.yml"
+CUR_VERSION=$(grep -oE 'MARKETING_VERSION = [^;]+' "$PBXPROJ" | head -1 | sed -E 's/MARKETING_VERSION = //; s/"//g; s/ //g')
+VERSION=${PUBLISHER_VERSION:-$CUR_VERSION}
+if ! print -r -- "$VERSION" | grep -qE '^[0-9]+\.[0-9]+(\.[0-9]+)?$'; then
+  echo "Version '$VERSION' is not MAJOR.MINOR or MAJOR.MINOR.BUILD"; exit 1
+fi
+THIRD=$(print -r -- "$VERSION" | awk -F. 'NF==3 {print $3}')
+BASE=$(print -r -- "$VERSION" | awk -F. '{print $1"."$2}')
+if [ -n "$THIRD" ] && [ "$THIRD" != "$NEXT" ]; then
+  echo "Retry version $VERSION must end in the build number ($NEXT): use $BASE.$NEXT"; exit 1
+fi
+
+# Apple closes a version once it approves it; a new build for it is refused (ITMS-90186 /
+# ITMS-90062) only after a full archive and upload. Check now instead.
+APPROVED=$(print -r -- "$SNAPSHOT" | ruby -Eutf-8 -rjson -e '
+  d = (JSON.parse(STDIN.read) rescue {})
+  closed = %w[PENDING_APPLE_RELEASE PENDING_DEVELOPER_RELEASE PROCESSING_FOR_APP_STORE
+              READY_FOR_SALE READY_FOR_DISTRIBUTION REPLACED_WITH_NEW_VERSION
+              REMOVED_FROM_SALE DEVELOPER_REMOVED_FROM_SALE]
+  puts (d["versions"] || []).select { |v| closed.include?(v["state"]) }.map { |v| v["version"] }' 2>/dev/null) || APPROVED=""
+if print -r -- "$APPROVED" | grep -qxF -- "$VERSION"; then
+  echo "App Store Connect has already approved version $VERSION, so it will not accept another build of it."
+  echo "Retry as $BASE.$NEXT (build $NEXT):  PUBLISHER_VERSION=$BASE.$NEXT"
+  exit 1
+fi
+
+if [ "$VERSION" != "$CUR_VERSION" ]; then
+  /usr/bin/sed -i '' -E "s/MARKETING_VERSION = [^;]+;/MARKETING_VERSION = $VERSION;/g" "$PBXPROJ"
+  [ -f "$SPEC" ] && /usr/bin/sed -i '' -E "s/(MARKETING_VERSION: *)\"?[0-9.]+\"?/\1\"$VERSION\"/" "$SPEC"
+  echo "MARKETING_VERSION $CUR_VERSION -> $VERSION"
 fi
 
 OUT="$APP_DIR/distribution/ios/build"
@@ -162,4 +206,4 @@ if [ -n "$NOTES_FILE" ] && [ -s "$NOTES_FILE" ]; then
     echo "WARNING: build uploaded, but its TestFlight notes could not be set (add them in App Store Connect)."
 fi
 
-echo "uploaded build $NEXT to TestFlight"
+echo "uploaded $VERSION ($NEXT) to TestFlight"

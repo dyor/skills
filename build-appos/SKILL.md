@@ -1,7 +1,7 @@
 ---
 name: build-appos
 description: Build "Appos", a macOS home for Operator, Runner, Publisher and Tiny Projects in one window. Operator's project list (with an icon per project) sits on the left; the right side shows Operator's page for the selected project, and Run / Publish open Runner or Publisher for that project in place, closing back to Operator with Esc. Each tool stays a standalone app too, because each is split into a Kit library plus a thin app, and Appos links the Kits from the sibling checkouts. Plain Swift package, no Xcode project. Use when the user says "build Appos", "put Operator, Runner and Publisher in one app", "one dock app for my tools", or asks for /dyor-knowledge-base appos. Mac only. Requires build-operator; build-runner, build-publisher and build-tiny-projects are optional.
-version: 1.0.1
+version: 1.1.0
 ---
 
 # Build Appos
@@ -132,6 +132,25 @@ enum Pane { case project, runner, publisher, tinyProjects }
 ignoring case, spaces, dashes and underscores (`TaskList.key`). `habit-hero` ↔ "Habit Hero".
 There's no mapping file. To link a project, create the list from its page, or rename the
 list in Tiny Projects.
+
+### Release card (Publisher's Shared tab, inside Appos)
+
+Releases are named by the convention in `build-publisher` → **Release naming**
+(`MAJOR.MINOR (BUILD)` first attempt, `MAJOR.MINOR.BUILD (BUILD)` retry). Build the release card
+around it so a fresh Appos shows it:
+
+- **Dates per step**: each step (cut, internal/TestFlight, sent for review, approved/rejected,
+  live) shows the date and time it happened, per store, read from the stores.
+- **Attempts**: the release lists every attempt (`1.2 (6)`, `1.2.7 (7)`, …), each with its stores,
+  outcome and failure reason (rejection, ITMS error, failed test pass).
+- **Durations**: release duration (first attempt's cut → live on each store, and on both), and
+  review time per store per attempt (sent → approved/rejected). Retries count toward the same
+  release.
+- **Retry action**: on a failed attempt, a **Retry** button that builds the next attempt as
+  `MAJOR.MINOR.<next build> (<next build>)` (via `PUBLISHER_VERSION`) and sends it **only to the
+  store(s) that failed**; the other store keeps its approved attempt.
+- **History view**: past releases listed newest first with version, attempts, cut date, live
+  dates and durations, so release speed can be compared over time.
 
 Navigation rules (these are the product, so keep them):
 
